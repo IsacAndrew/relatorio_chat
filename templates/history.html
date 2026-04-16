@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Histórico de Auditoria{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2><i class="fa-solid fa-clock-rotate-left"></i> Histórico de Auditoria</h2>
+    <p class="page-subtitle">Registro de todas as ações realizadas no sistema</p>
+  </div>
+</div>
+
+<!-- ── Filtros de data ────────────────────────────────────── -->
+<div class="card filter-card">
+  <div class="filter-row">
+    <div class="form-group-inline">
+      <label><i class="fa-solid fa-calendar-days"></i> Data início</label>
+      <input type="date" id="hist-inicio" class="input-date" />
+    </div>
+    <div class="form-group-inline">
+      <label><i class="fa-solid fa-calendar-check"></i> Data fim</label>
+      <input type="date" id="hist-fim" class="input-date" />
+    </div>
+    <button class="btn btn-primary" onclick="historyApp.buscar()">
+      <i class="fa-solid fa-magnifying-glass"></i> Filtrar
+    </button>
+    <button class="btn btn-ghost" onclick="historyApp.resetar()">
+      <i class="fa-solid fa-rotate-left"></i> Últimos 30 dias
+    </button>
+  </div>
+</div>
+
+<!-- ── Resumo ─────────────────────────────────────────────── -->
+<div class="history-summary" id="history-summary" style="display:none;">
+  <span id="history-total-label">0 registros encontrados</span>
+</div>
+
+<!-- ── Tabela de histórico ────────────────────────────────── -->
+<div class="card table-card">
+  <div class="table-responsive">
+    <table class="table" id="tabela-historico">
+      <thead>
+        <tr>
+          <th>Data / Hora</th>
+          <th>Usuário</th>
+          <th>Ação</th>
+          <th>Ocorrência</th>
+          <th>Detalhes</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-historico">
+        <!-- Populado via JS -->
+        <tr>
+          <td colspan="5" class="td-loading">
+            <i class="fa-solid fa-spinner fa-spin"></i> Carregando...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginação -->
+  <div class="pagination" id="pagination" style="display:none;">
+    <button class="btn btn-ghost btn-sm" id="btn-anterior" onclick="historyApp.paginaAnterior()">
+      <i class="fa-solid fa-chevron-left"></i> Anterior
+    </button>
+    <span id="pagination-info">Página 1</span>
+    <button class="btn btn-ghost btn-sm" id="btn-proximo" onclick="historyApp.proximaPagina()">
+      Próxima <i class="fa-solid fa-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Template de linha (clonado pelo JS) -->
+<template id="tpl-history-row">
+  <tr>
+    <td class="td-data"></td>
+    <td><span class="badge-user td-usuario"></span></td>
+    <td><span class="badge-acao td-acao"></span></td>
+    <td class="td-ocorrencia"></td>
+    <td class="td-detalhes"></td>
+  </tr>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/history.js') }}"></script>
+{% endblock %}

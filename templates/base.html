@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Relatório Envios{% endblock %}</title>
+
+  <!-- Favicon: bolinha azul -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔵</text></svg>" />
+
+  <!-- Fontes Google -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Ícones -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <!-- CSS Principal -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════════════════
+       NAVBAR
+  ════════════════════════════════════════════════════════════ -->
+  {% if current_user.is_authenticated %}
+  <nav class="navbar" id="navbar">
+    <div class="navbar-brand">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <span>Relatório Envios</span>
+    </div>
+
+    <ul class="navbar-links">
+      <li>
+        <a href="{{ url_for('dashboard.dashboard') }}"
+           class="{% if request.endpoint == 'dashboard.dashboard' %}active{% endif %}">
+          <i class="fa-solid fa-chart-pie"></i> Dashboard
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('occurrences.listar') }}"
+           class="{% if request.blueprint == 'occurrences' and request.endpoint != 'occurrences.nova' %}active{% endif %}">
+          <i class="fa-solid fa-list"></i> Ocorrências
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('occurrences.nova') }}"
+           class="{% if request.endpoint == 'occurrences.nova' %}active{% endif %}">
+          <i class="fa-solid fa-plus"></i> Nova Ocorrência
+        </a>
+      </li>
+    </ul>
+
+    <div class="navbar-user">
+      <i class="fa-solid fa-user-circle"></i>
+      <span>{{ current_user.username }}</span>
+      <a href="{{ url_for('auth.logout') }}" class="btn-logout" title="Sair">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </a>
+    </div>
+  </nav>
+  {% endif %}
+
+  <!-- ══════════════════════════════════════════════════════════
+       FLASH MESSAGES
+  ════════════════════════════════════════════════════════════ -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container" id="flash-container">
+      {% for category, message in messages %}
+      <div class="flash flash-{{ category }}">
+        <i class="fa-solid {% if category == 'success' %}fa-check-circle{% elif category == 'error' %}fa-xmark-circle{% else %}fa-info-circle{% endif %}"></i>
+        <span>{{ message }}</span>
+        <button class="flash-close" onclick="this.parentElement.remove()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- ══════════════════════════════════════════════════════════
+       CONTEÚDO
+  ════════════════════════════════════════════════════════════ -->
+  <main class="main-content {% if not current_user.is_authenticated %}no-navbar{% endif %}">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SCRIPTS GLOBAIS
+  ════════════════════════════════════════════════════════════ -->
+
+  <!-- Socket.IO CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+
+  <!-- JS principal (inicializa Socket.IO, utilitários globais) -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+  {% block extra_js %}{% endblock %}
+
+  <script>
+    // Remove flash messages automaticamente após 5 segundos
+    setTimeout(() => {
+      const flashes = document.querySelectorAll(".flash");
+      flashes.forEach(f => {
+        f.style.animation = "slideOutRight 0.4s ease forwards";
+        setTimeout(() => f.remove(), 400);
+      });
+    }, 5000);
+  </script>
+</body>
+</html>

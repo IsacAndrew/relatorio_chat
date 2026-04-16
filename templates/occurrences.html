@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Ocorrências{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2><i class="fa-solid fa-list"></i> Ocorrências</h2>
+    <p class="page-subtitle">
+      <span id="count-label">{{ ocorrencias|length }}</span> registros ativos
+    </p>
+  </div>
+  <div class="header-actions">
+    <div class="realtime-badge" id="realtime-badge">
+      <span class="realtime-dot"></span>
+      <span>Tempo real</span>
+    </div>
+    <a href="{{ url_for('occurrences.nova') }}" class="btn btn-primary">
+      <i class="fa-solid fa-plus"></i> Nova Ocorrência
+    </a>
+  </div>
+</div>
+
+<!-- ── Filtros ────────────────────────────────────────────── -->
+<div class="card filter-card">
+  <div class="filter-row">
+    <input
+      type="text"
+      id="filtro-busca"
+      class="input-search"
+      placeholder="🔍 Buscar por modelo, cor, cliente..."
+      oninput="occurrencesApp.filtrarTabela()"
+    />
+    <select id="filtro-tipo-erro" onchange="occurrencesApp.filtrarTabela()">
+      <option value="">Todos os tipos</option>
+      {% for tipo in tipos_erro %}
+      <option value="{{ tipo }}">{{ tipo }}</option>
+      {% endfor %}
+    </select>
+    <select id="filtro-modelo" onchange="occurrencesApp.filtrarTabela()">
+      <option value="">Todos os modelos</option>
+      {% for modelo in catalogo.keys() %}
+      <option value="{{ modelo }}">{{ modelo }}</option>
+      {% endfor %}
+    </select>
+    <!-- Filtro por data -->
+    <div class="form-group-inline">
+      <label><i class="fa-solid fa-calendar-days"></i> De</label>
+      <input type="date" id="filtro-data-inicio" class="input-date" onchange="occurrencesApp.filtrarTabela()" />
+    </div>
+    <div class="form-group-inline">
+      <label>até</label>
+      <input type="date" id="filtro-data-fim" class="input-date" onchange="occurrencesApp.filtrarTabela()" />
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="occurrencesApp.limparFiltros()">
+      <i class="fa-solid fa-rotate-left"></i> Limpar
+    </button>
+  </div>
+</div>
+
+<!-- ── Tabela ─────────────────────────────────────────────── -->
+<div class="card table-card">
+  <div class="table-responsive">
+    <table class="table" id="tabela-ocorrencias">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Modelo</th>
+          <th>Cor</th>
+          <th>Tipo de Erro</th>
+          <th>Data / Hora</th>
+          <th>Cliente</th>
+          <th>Print</th>
+          <th>Cadastrado por</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-ocorrencias">
+        {% for oc in ocorrencias %}
+        <tr class="tr-ocorrencia" data-id="{{ oc.id }}"
+            data-modelo="{{ oc.modelo }}"
+            data-cor="{{ oc.cor }}"
+            data-tipo="{{ oc.tipo_erro }}"
+            data-cliente="{{ oc.nome_cliente or '' }}"
+            data-data="{{ oc.data_ocorrido.strftime('%Y-%m-%d') }}">
+          <td class="td-id">#{{ oc.id }}</td>
+          <td class="td-modelo">
+            {% if oc.link_conversa %}
+              <a href="{{ oc.link_conversa }}" target="_blank" class="modelo-link" title="Abrir conversa">
+                {{ oc.modelo }} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.75rem;"></i>
+              </a>
+            {% else %}
+              {{ oc.modelo }}
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge-cor">{{ oc.cor }}</span>
+          </td>
+          <td>
+            <span class="badge-tipo badge-tipo-{{ oc.tipo_erro | lower | replace(' ', '-') | replace('/', '-') }}">
+              {{ oc.tipo_erro }}
+            </span>
+          </td>
+          <td class="td-data">
+            {{ oc.data_ocorrido.strftime('%d/%m/%Y') }}<br/>
+            <small>{{ oc.hora_ocorrido.strftime('%H:%M') }}</small>
+          </td>
+          <td>{{ oc.nome_cliente or '—' }}</td>
+          <td class="td-print">
+            {% if oc.print_url %}
+            <a href="{{ oc.print_url }}" target="_blank" class="btn-print-link" title="Ver print">
+              <i class="fa-solid fa-image"></i>
+            </a>
+            {% else %}
+            <span class="no-print" title="Sem print">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge-user">{{ oc.criador.username }}</span>
+          </td>
+          <td class="td-actions">
+            <a href="{{ url_for('occurrences.editar', oc_id=oc.id) }}"
+               class="btn-icon btn-edit" title="Editar">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </a>
+            <button
+              class="btn-icon btn-delete"
+              onclick="occurrencesApp.confirmarExclusao({{ oc.id }}, '{{ oc.modelo }} — {{ oc.cor }}')"
+              title="Excluir">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+        {% else %}
+        <tr id="tr-empty">
+          <td colspan="9" class="td-empty">
+            <div class="empty-state-inline">
+              <i class="fa-solid fa-inbox"></i>
+              <span>Nenhuma ocorrência registrada ainda.</span>
+              <a href="{{ url_for('occurrences.nova') }}" class="btn btn-primary btn-sm">
+                Registrar primeira ocorrência
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Modal de confirmação de exclusão ──────────────────── -->
+<div class="modal-overlay" id="modal-delete" style="display:none;">
+  <div class="modal-box">
+    <div class="modal-icon modal-icon-danger">
+      <i class="fa-solid fa-trash"></i>
+    </div>
+    <h3>Confirmar Exclusão</h3>
+    <p id="modal-delete-msg">Deseja excluir esta ocorrência?</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="occurrencesApp.fecharModal()">Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirmar-delete">
+        <i class="fa-solid fa-trash"></i> Excluir
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/occurrences.js') }}"></script>
+{% endblock %}

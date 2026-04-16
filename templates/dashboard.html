@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2><i class="fa-solid fa-chart-pie"></i> Dashboard</h2>
+    <p class="page-subtitle">Análise de erros por período</p>
+  </div>
+  <!-- Indicador de conexão tempo real -->
+  <div class="realtime-badge" id="realtime-badge">
+    <span class="realtime-dot"></span>
+    <span>Tempo real</span>
+  </div>
+</div>
+
+<!-- ── Filtro de período ─────────────────────────────────── -->
+<div class="card filter-card">
+  <div class="filter-row">
+    <div class="form-group-inline">
+      <label><i class="fa-solid fa-calendar-days"></i> Data início</label>
+      <input type="date" id="data-inicio" class="input-date" />
+    </div>
+    <div class="form-group-inline">
+      <label><i class="fa-solid fa-calendar-check"></i> Data fim</label>
+      <input type="date" id="data-fim" class="input-date" />
+    </div>
+    <button class="btn btn-primary" id="btn-filtrar" onclick="dashboardApp.filtrar()">
+      <i class="fa-solid fa-magnifying-glass"></i> Filtrar
+    </button>
+    <button class="btn btn-ghost" onclick="dashboardApp.resetarFiltro()">
+      <i class="fa-solid fa-rotate-left"></i> Últimos 30 dias
+    </button>
+  </div>
+</div>
+
+<!-- ── KPI Total ─────────────────────────────────────────── -->
+<div class="kpi-row">
+  <div class="kpi-card" id="kpi-total">
+    <div class="kpi-icon"><i class="fa-solid fa-exclamation-triangle"></i></div>
+    <div class="kpi-info">
+      <span class="kpi-value" id="kpi-total-valor">—</span>
+      <span class="kpi-label">Total de ocorrências no período</span>
+    </div>
+  </div>
+  <div class="kpi-card kpi-periodo">
+    <div class="kpi-icon"><i class="fa-solid fa-calendar-range"></i></div>
+    <div class="kpi-info">
+      <span class="kpi-value" id="kpi-periodo-valor">—</span>
+      <span class="kpi-label">Período analisado</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Gráficos ──────────────────────────────────────────── -->
+<div class="charts-grid">
+
+  <!-- Pizza: tipos de erro -->
+  <div class="card chart-card chart-pizza">
+    <h3 class="chart-title">
+      <i class="fa-solid fa-chart-pie"></i> Tipos de Erro
+    </h3>
+    <div class="chart-wrapper">
+      <canvas id="chart-tipos-erro"></canvas>
+    </div>
+    <div id="legend-tipos-erro" class="chart-legend"></div>
+  </div>
+
+  <!-- Barras: modelos -->
+  <div class="card chart-card chart-bar">
+    <h3 class="chart-title">
+      <i class="fa-solid fa-ranking-star"></i> Modelos com Mais Erros
+    </h3>
+    <div class="chart-wrapper chart-wrapper-bar">
+      <canvas id="chart-modelos"></canvas>
+    </div>
+  </div>
+
+  <!-- Barras: cores -->
+  <div class="card chart-card chart-bar">
+    <h3 class="chart-title">
+      <i class="fa-solid fa-palette"></i> Cores com Mais Erros
+    </h3>
+    <div class="chart-wrapper chart-wrapper-bar">
+      <canvas id="chart-cores"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- Estado vazio -->
+<div class="empty-state" id="dashboard-empty" style="display:none;">
+  <i class="fa-solid fa-chart-bar"></i>
+  <p>Nenhuma ocorrência encontrada no período selecionado.</p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

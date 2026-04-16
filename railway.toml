@@ -1,0 +1,11 @@
+[build]
+# Força o Nixpacks em vez do Railpack.
+# O Railpack tenta montar variáveis como build secrets durante o build,
+# causando o erro "secret SECRET_KEY: not found".
+# O Nixpacks lê as variáveis apenas em runtime, que é o comportamento correto.
+builder = "nixpacks"
+
+[deploy]
+startCommand = "gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 --timeout 120 app:app"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
