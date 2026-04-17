@@ -188,6 +188,9 @@ CATALOGO = {
             "Cinza/Branco/Preto/Azul Marinho", "Cinza/Branco/Marrom/Preto",
             "Cinza/Branco/Marrom/Azul Marinho",
         ],
+        "Kit 5":[
+            "Cinza/Preto/Azul Marinho/Marrom/Branco"
+        ],
     },
 
     "Body Regata": {
