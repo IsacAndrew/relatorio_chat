@@ -384,6 +384,18 @@ input, select, textarea, button {
 }
 .cor-row .cor-select:focus { outline: none; border-color: var(--accent); }
 .cor-row .cor-select option { background: var(--navy-800); }
+/* Esse aqui é o select de kit — mesma cara que o cor-select, só mais estreito */
+.cor-row .kit-select {
+  flex: 0 0 105px;
+  background: rgba(10, 22, 40, 0.7);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 10px 10px;
+  transition: border-color var(--transition);
+}
+.cor-row .kit-select:focus { outline: none; border-color: var(--accent); }
+.cor-row .kit-select option { background: var(--navy-800); }
 .btn-remove-cor {
   background: rgba(239,68,68,0.1);
   border: 1px solid rgba(239,68,68,0.25);
