@@ -181,7 +181,7 @@ CATALOGO = {
             "Marrom/Azul Marinho/Preto", "Preto/Cinza/Marrom", "Preto/Azul Marinho/Cinza",
             "Marrom/Azul Marinho/Cinza", "Branco/Preto/Cinza", "Branco/Marrom/Preto",
             "Branco/Marrom/Azul Marinho", "Branco/Azul Marinho/Preto",
-            "Branco/Marrom/Cinza",
+            "Branco/Marrom/Cinza", "Marrom/Azul Marinho/Cinza", 
         ],
         "Kit 4": [
             "Branco/Marrom/Azul Marinho/Preto", "Cinza/Marrom/Azul Marinho/Preto",
