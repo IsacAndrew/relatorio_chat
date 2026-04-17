@@ -288,6 +288,7 @@ CATALOGO = {
 TIPOS_ERRO = [
     "Erro de cor",
     "Erro de modelo",
+    "Erro de Modelo e Cor"
     "Produto faltando",
     "Produto Danificado",
 ]
