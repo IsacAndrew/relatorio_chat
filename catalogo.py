@@ -50,7 +50,7 @@ CATALOGO = {
             "Preto/Marrom/Branco/Vermelho", "Preto/Rosa/Lilás/Branco",
             "Lilás/Branco/Vermelho/Preto", "Preto/Branco/Marrom/Amarelo",
             "Branco/Lilás/Azul/Rosa", "Branco/Preto/Azul/Rosa",
-            "Azul/Amarelo/Rosa/Lilás",
+            "Azul/Amarelo/Rosa/Lilás", "Preto/Branco/Marrom/Amarelo",
         ],
         "Kit 5": [
             "Azul/Rosa/Vermelho/Amarelo/Branco", "Azul/Amarelo/Branco/Preto/Rosa",
