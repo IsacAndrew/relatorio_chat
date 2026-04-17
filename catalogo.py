@@ -291,4 +291,5 @@ TIPOS_ERRO = [
     "Erro de Modelo e Cor",
     "Produto faltando",
     "Produto Danificado",
+    "Embalagem Danificada", 
 ]
