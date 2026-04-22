@@ -384,18 +384,6 @@ input, select, textarea, button {
 }
 .cor-row .cor-select:focus { outline: none; border-color: var(--accent); }
 .cor-row .cor-select option { background: var(--navy-800); }
-/* Esse aqui é o select de kit — mesma cara que o cor-select, só mais estreito */
-.cor-row .kit-select {
-  flex: 0 0 105px;
-  background: rgba(10, 22, 40, 0.7);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  padding: 10px 10px;
-  transition: border-color var(--transition);
-}
-.cor-row .kit-select:focus { outline: none; border-color: var(--accent); }
-.cor-row .kit-select option { background: var(--navy-800); }
 .btn-remove-cor {
   background: rgba(239,68,68,0.1);
   border: 1px solid rgba(239,68,68,0.25);
@@ -1084,3 +1072,182 @@ input, select, textarea, button {
   .form-actions { flex-direction: column; }
   .btn { justify-content: center; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   CARD CORES DETALHADO (Dashboard)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* O card em si tem altura fixa — não cresce com o conteúdo */
+#card-cores-detalhado {
+  display: flex;
+  flex-direction: column;
+}
+
+.cores-loading {
+  text-align: center;
+  padding: 32px;
+  color: var(--text-muted);
+  font-size: 1.4rem;
+}
+
+/* Scroll vertical interno — altura fixa, página não se move */
+#cores-detalhado-container {
+  flex: 1;
+  height: 340px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
+  /* Scrollbar fina customizada dentro do card */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59,130,246,0.25) transparent;
+}
+#cores-detalhado-container::-webkit-scrollbar { width: 4px; }
+#cores-detalhado-container::-webkit-scrollbar-track { background: transparent; }
+#cores-detalhado-container::-webkit-scrollbar-thumb {
+  background: rgba(59,130,246,0.25);
+  border-radius: 99px;
+}
+#cores-detalhado-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(59,130,246,0.45);
+}
+
+/* Fade sutil na borda inferior indicando que há mais conteúdo */
+#card-cores-detalhado::after {
+  content: "";
+  display: block;
+  height: 28px;
+  margin-top: -28px;
+  background: linear-gradient(to bottom, transparent, rgba(14,31,61,0.85));
+  pointer-events: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+/* ── Grupo por modelo ─────────────────────────────────────── */
+.cor-grupo {
+  margin-bottom: 16px;
+}
+.cor-grupo:last-child { margin-bottom: 6px; }
+
+.cor-grupo-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(59,130,246,0.11);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  /* Fundo sólido para não vazar conteúdo ao rolar */
+  background: var(--navy-800);
+  padding-top: 4px;
+}
+
+.cor-grupo-nome {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.cor-grupo-total-badge {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 2px 8px;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+/* ── Cada linha de cor ────────────────────────────────────── */
+.cor-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 5px;
+  padding: 6px 9px;
+  border-radius: 7px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid transparent;
+  transition: background 0.18s, border-color 0.18s;
+  cursor: default;
+}
+.cor-item:hover {
+  background: rgba(59,130,246,0.07);
+  border-color: rgba(59,130,246,0.15);
+}
+
+/* Bolinha colorida */
+.cor-bolinha {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Nome da cor */
+.cor-item-nome {
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Barra + número */
+.cor-item-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 110px;
+  flex-shrink: 0;
+}
+.cor-item-bar-track {
+  flex: 1;
+  height: 4px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+.cor-item-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.55s cubic-bezier(0.4,0,0.2,1);
+  width: 0%;
+}
+.cor-item-count {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  min-width: 16px;
+  text-align: right;
+}
+
+/* Badges de ranking */
+.cor-rank-badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+}
+.cor-rank-1 { background: rgba(251,191,36,0.18);  color: #fbbf24; box-shadow: 0 0 6px rgba(251,191,36,0.2); }
+.cor-rank-2 { background: rgba(148,163,184,0.13); color: #94a3b8; }
+.cor-rank-3 { background: rgba(180,116,60,0.13);  color: #cd7c3a; }
+.cor-rank-n { background: rgba(255,255,255,0.04); color: var(--text-muted); font-size: 0.58rem; }
+
