@@ -82,13 +82,16 @@
     </div>
   </div>
 
-  <!-- Barras: cores -->
-  <div class="card chart-card chart-bar">
+  <!-- Card customizado: cores por modelo -->
+  <div class="card chart-card chart-bar" id="card-cores-detalhado">
     <h3 class="chart-title">
       <i class="fa-solid fa-palette"></i> Cores com Mais Erros
     </h3>
-    <div class="chart-wrapper chart-wrapper-bar">
-      <canvas id="chart-cores"></canvas>
+    <div id="cores-detalhado-container">
+      <!-- Populado via JS com visual customizado -->
+      <div class="cores-loading">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+      </div>
     </div>
   </div>
 
