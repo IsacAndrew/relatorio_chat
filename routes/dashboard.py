@@ -75,24 +75,40 @@ def api_dados():
 
     total = len(ocorrencias)
 
-    # ── Contagens ──────────────────────────────────────────────
-    contagem_modelos    = Counter(o.modelo    for o in ocorrencias)
-    contagem_cores      = Counter(o.cor       for o in ocorrencias)
-    contagem_tipo_erro  = Counter(o.tipo_erro for o in ocorrencias)
+    # ── Contagens simples ──────────────────────────────────────
+    contagem_modelos   = Counter(o.modelo    for o in ocorrencias)
+    contagem_tipo_erro = Counter(o.tipo_erro for o in ocorrencias)
+
+    # ── Contagem de cores simples (mantida para compatibilidade) ─
+    contagem_cores = Counter(o.cor for o in ocorrencias)
+
+    # ── Contagem detalhada: (modelo, cor_individual) ───────────
+    # Cada ocorrência pode ter múltiplas cores ("Preto, Branco")
+    # Expandimos para contabilizar cada cor individualmente, vinculada ao modelo.
+    contagem_modelo_cor = Counter()
+    for o in ocorrencias:
+        for cor in o.cor.split(","):
+            cor = cor.strip()
+            if cor:
+                contagem_modelo_cor[(o.modelo, cor)] += 1
+
+    # Monta lista ordenada por quantidade decrescente
+    cores_detalhado = [
+        {"modelo": modelo, "cor": cor, "total": total_}
+        for (modelo, cor), total_ in contagem_modelo_cor.most_common()
+    ]
 
     # ── Ordena do maior para o menor (ranking decrescente) ─────
     def _ordenar(counter: Counter) -> dict:
-        """Retorna {'labels': [...], 'values': [...]} ordenado desc."""
-        items  = counter.most_common()   # já ordena decrescente
-        labels = [item[0] for item in items]
-        values = [item[1] for item in items]
-        return {"labels": labels, "values": values}
+        items  = counter.most_common()
+        return {"labels": [i[0] for i in items], "values": [i[1] for i in items]}
 
     return jsonify({
-        "total":       total,
-        "data_inicio": data_inicio.strftime("%d/%m/%Y"),
-        "data_fim":    data_fim.strftime("%d/%m/%Y"),
-        "modelos":     _ordenar(contagem_modelos),
-        "cores":       _ordenar(contagem_cores),
-        "tipos_erro":  _ordenar(contagem_tipo_erro),
+        "total":           total,
+        "data_inicio":     data_inicio.strftime("%d/%m/%Y"),
+        "data_fim":        data_fim.strftime("%d/%m/%Y"),
+        "modelos":         _ordenar(contagem_modelos),
+        "cores":           _ordenar(contagem_cores),
+        "cores_detalhado": cores_detalhado,
+        "tipos_erro":      _ordenar(contagem_tipo_erro),
     })
