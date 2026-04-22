@@ -43,7 +43,18 @@
             <span style="color:var(--text-muted);font-weight:400;font-size:0.8rem;"> — adicione uma por pedido incorreto</span>
           </label>
           <div id="cores-container">
-            <!-- O JS injeta as linhas de kit + cor aqui —>
+            <!-- Primeira cor (sempre visível) -->
+            <div class="cor-row" id="cor-row-0">
+              <span class="cor-num">1</span>
+              <select name="cor[]" class="cor-select" required disabled>
+                <option value="">— Selecione primeiro o modelo —</option>
+              </select>
+              <!-- Botão de remover (oculto na primeira linha) -->
+              <button type="button" class="btn-remove-cor" style="display:none;"
+                      onclick="novaOcorrenciaApp.removerCor(0)">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
           </div>
           <!-- Botão adicionar cor -->
           <button type="button" class="btn-add-cor" id="btn-add-cor"
