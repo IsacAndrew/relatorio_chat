@@ -119,7 +119,6 @@ const dashboardApp = (() => {
     const grid  = document.querySelector(".charts-grid");
 
     if (data.total === 0) {
-      // Sem dados: esconde gráficos, exibe estado vazio
       if (grid)  grid.style.display = "none";
       if (empty) empty.style.display = "block";
       return;
@@ -128,10 +127,9 @@ const dashboardApp = (() => {
     if (grid)  grid.style.display = "";
     if (empty) empty.style.display = "none";
 
-    // Gráficos
     _renderizarPizza(data.tipos_erro);
     _renderizarBarras("chart-modelos", data.modelos);
-    _renderizarBarras("chart-cores",   data.cores);
+    _renderizarCoresDetalhado(data.cores_detalhado || []);
   }
 
   // ── Gráfico de pizza (tipos de erro) ──────────────────────
@@ -260,6 +258,113 @@ const dashboardApp = (() => {
           },
         },
       },
+    });
+  }
+
+  // ── Card: Cores com Mais Erros — visual agrupado por modelo ──
+
+  /**
+   * Gera uma cor HSL consistente a partir de uma string (hash simples).
+   * Garante que cada cor/modelo sempre receba a mesma cor visual.
+   */
+  function _hashColor(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const h = Math.abs(hash) % 360;
+    return `hsl(${h}, 65%, 58%)`;
+  }
+
+  /**
+   * Renderiza o card de cores agrupado por modelo.
+   * @param {Array} lista — [{modelo, cor, total}, ...]
+   */
+  function _renderizarCoresDetalhado(lista) {
+    const container = document.getElementById("cores-detalhado-container");
+    if (!container) return;
+
+    if (!lista || lista.length === 0) {
+      container.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:24px;font-size:0.88rem;">Sem dados no período.</p>`;
+      return;
+    }
+
+    // Máximo global para calcular % das barras
+    const maxTotal = lista[0].total;
+
+    // Agrupa por modelo preservando ordem (já vem ordenado por total desc)
+    const grupos = {};
+    const ordemModelos = [];
+    lista.forEach(item => {
+      if (!grupos[item.modelo]) {
+        grupos[item.modelo] = [];
+        ordemModelos.push(item.modelo);
+      }
+      grupos[item.modelo].push(item);
+    });
+
+    // Rank global (posição no array original)
+    const rankGlobal = {};
+    lista.forEach((item, i) => {
+      const key = `${item.modelo}||${item.cor}`;
+      if (rankGlobal[key] === undefined) rankGlobal[key] = i;
+    });
+
+    // Monta HTML
+    let html = "";
+    ordemModelos.forEach(modelo => {
+      const itens = grupos[modelo];
+      const totalModelo = itens.reduce((s, i) => s + i.total, 0);
+      const corModelo   = _hashColor(modelo);
+
+      html += `
+        <div class="cor-grupo">
+          <div class="cor-grupo-header">
+            <span class="cor-grupo-dot" style="background:${corModelo};width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;box-shadow:0 0 6px ${corModelo}88;"></span>
+            <span class="cor-grupo-nome" title="${modelo}">${modelo}</span>
+            <span class="cor-grupo-total-badge">${totalModelo} erro${totalModelo > 1 ? "s" : ""}</span>
+          </div>
+      `;
+
+      itens.forEach(item => {
+        const rank = rankGlobal[`${item.modelo}||${item.cor}`];
+        const pct  = maxTotal > 0 ? (item.total / maxTotal) * 100 : 0;
+        const corDot = _hashColor(item.cor);
+
+        let rankHtml = "";
+        if      (rank === 0) rankHtml = `<span class="cor-rank-badge cor-rank-1">1º</span>`;
+        else if (rank === 1) rankHtml = `<span class="cor-rank-badge cor-rank-2">2º</span>`;
+        else if (rank === 2) rankHtml = `<span class="cor-rank-badge cor-rank-3">3º</span>`;
+        else                 rankHtml = `<span class="cor-rank-badge cor-rank-n">${rank + 1}º</span>`;
+
+        html += `
+          <div class="cor-item" data-pct="${pct.toFixed(1)}">
+            ${rankHtml}
+            <span class="cor-bolinha" style="background:${corDot};box-shadow:0 0 5px ${corDot}66;"></span>
+            <span class="cor-item-nome">${item.cor}</span>
+            <div class="cor-item-bar-wrap">
+              <div class="cor-item-bar-track">
+                <div class="cor-item-bar-fill" style="background:${corDot};width:0%;" data-width="${pct.toFixed(1)}"></div>
+              </div>
+              <span class="cor-item-count">${item.total}</span>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+    });
+
+    container.innerHTML = html;
+
+    // Anima as barras com stagger (delay escalonado)
+    requestAnimationFrame(() => {
+      const barras = container.querySelectorAll(".cor-item-bar-fill");
+      barras.forEach((bar, i) => {
+        setTimeout(() => {
+          bar.style.width = bar.dataset.width + "%";
+        }, i * 35);
+      });
     });
   }
 
