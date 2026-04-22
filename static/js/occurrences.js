@@ -2,12 +2,12 @@
  * occurrences.js
  * ──────────────────────────────────────────────────────────────
  * Lógica das telas de ocorrências:
- *  - Listagem: filtros locais + tempo real via Socket.IO
- *  - Formulário de criação: cascata Modelo → Kit → Combinação de cor
- *  - Formulário de edição: mesma lógica, pré-seleciona dados existentes
+ *  - Listagem: filtros locais (texto, tipo, modelo, data) + tempo real
+ *  - Formulário de criação: múltiplas cores (até 6), preview de imagem,
+ *    confirmação sem print
+ *  - Formulário de edição: mesmas funcionalidades
  *  - Exclusão via AJAX com modal de confirmação
  */
-
 
 // ═════════════════════════════════════════════════════════════
 // MÓDULO DA LISTAGEM (occurrences.html)
@@ -22,13 +22,25 @@ const occurrencesApp = (() => {
     const tbody = document.getElementById("tbody-ocorrencias");
     if (!tbody) return;
 
-    // Escuta eventos do Socket.IO pra atualizar a lista em tempo real
-    socket.on("nova_ocorrencia",    (oc)      => { _adicionarLinha(oc); _atualizarContador(1); mostrarToast(`Nova ocorrência: ${oc.modelo} — ${oc.cor}`, "success"); });
-    socket.on("ocorrencia_editada", (oc)      => { _atualizarLinha(oc); mostrarToast(`Ocorrência #${oc.id} atualizada.`, "info"); });
-    socket.on("ocorrencia_deletada",({ id }) => { _removerLinha(id);  _atualizarContador(-1); mostrarToast(`Ocorrência #${id} excluída.`, "info"); });
+    socket.on("nova_ocorrencia", (oc) => {
+      _adicionarLinha(oc);
+      _atualizarContador(1);
+      mostrarToast(`Nova ocorrência: ${oc.modelo} — ${oc.cor}`, "success");
+    });
+
+    socket.on("ocorrencia_editada", (oc) => {
+      _atualizarLinha(oc);
+      mostrarToast(`Ocorrência #${oc.id} atualizada.`, "info");
+    });
+
+    socket.on("ocorrencia_deletada", ({ id }) => {
+      _removerLinha(id);
+      _atualizarContador(-1);
+      mostrarToast(`Ocorrência #${id} excluída.`, "info");
+    });
   }
 
-  // ── Filtro local (texto + tipo + modelo + data) ────────────
+  // ── Filtro local na tabela (texto + tipo + modelo + data) ──
 
   function filtrarTabela() {
     const busca        = document.getElementById("filtro-busca")?.value.toLowerCase() || "";
@@ -45,9 +57,9 @@ const occurrencesApp = (() => {
       const cor     = tr.dataset.cor?.toLowerCase()     || "";
       const tipo    = tr.dataset.tipo   || "";
       const cliente = tr.dataset.cliente?.toLowerCase() || "";
-      const dataOc  = tr.dataset.data   || "";
+      const dataOc  = tr.dataset.data   || "";  // formato YYYY-MM-DD
 
-      const matchBusca  = !busca        || modelo.includes(busca) || cor.includes(busca) || cliente.includes(busca);
+      const matchBusca  = !busca || modelo.includes(busca) || cor.includes(busca) || cliente.includes(busca);
       const matchTipo   = !tipoFiltro   || tipo === tipoFiltro;
       const matchModelo = !modeloFiltro || tr.dataset.modelo === modeloFiltro;
       const matchDataI  = !dataInicio   || dataOc >= dataInicio;
@@ -58,42 +70,45 @@ const occurrencesApp = (() => {
       if (visivel) visiveis++;
     });
 
-    // Exibe linha de "sem resultado" se nenhuma linha passar no filtro
-    let trVazia = document.getElementById("tr-sem-resultado");
+    // Linha "sem resultado"
+    let trSemResultado = document.getElementById("tr-sem-resultado");
     if (visiveis === 0) {
-      if (!trVazia) {
-        trVazia = document.createElement("tr");
-        trVazia.id = "tr-sem-resultado";
-        trVazia.innerHTML = `
+      if (!trSemResultado) {
+        trSemResultado = document.createElement("tr");
+        trSemResultado.id = "tr-sem-resultado";
+        trSemResultado.innerHTML = `
           <td colspan="9" class="td-empty">
             <div class="empty-state-inline">
               <i class="fa-solid fa-filter-circle-xmark"></i>
               <span>Nenhuma ocorrência encontrada para este filtro.</span>
             </div>
           </td>`;
-        document.getElementById("tbody-ocorrencias")?.appendChild(trVazia);
+        document.getElementById("tbody-ocorrencias")?.appendChild(trSemResultado);
       }
     } else {
-      trVazia?.remove();
+      trSemResultado?.remove();
     }
   }
 
   function limparFiltros() {
-    ["filtro-busca","filtro-tipo-erro","filtro-modelo",
-     "filtro-data-inicio","filtro-data-fim"].forEach(id => {
+    ["filtro-busca", "filtro-tipo-erro", "filtro-modelo",
+     "filtro-data-inicio", "filtro-data-fim"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = "";
     });
     filtrarTabela();
   }
 
-  // ── Modal de confirmação de exclusão ──────────────────────
+  // ── Confirmação de exclusão ────────────────────────────────
 
   function confirmarExclusao(id, descricao) {
     _idParaDeletar = id;
     const msg = document.getElementById("modal-delete-msg");
     if (msg) msg.textContent = `Excluir "${descricao}"? Esta ação não pode ser desfeita.`;
-    document.getElementById("btn-confirmar-delete").onclick = () => _executarExclusao(id);
+
+    const btnConfirmar = document.getElementById("btn-confirmar-delete");
+    if (btnConfirmar) btnConfirmar.onclick = () => _executarExclusao(id);
+
     document.getElementById("modal-delete").style.display = "flex";
   }
 
@@ -112,7 +127,7 @@ const occurrencesApp = (() => {
     }
   }
 
-  // ── Manipulação da tabela em tempo real ───────────────────
+  // ── Manipulação da tabela (tempo real) ────────────────────
 
   function _adicionarLinha(oc) {
     const tbody = document.getElementById("tbody-ocorrencias");
@@ -122,14 +137,14 @@ const occurrencesApp = (() => {
 
     const tipoCss = oc.tipo_erro.toLowerCase().replace(/\s+/g, "-").replace(/\//g, "-");
 
-    // Modelo vira link se tiver link da conversa
+    // Modelo com link (se tiver)
     const modeloHtml = oc.link_conversa
       ? `<a href="${oc.link_conversa}" target="_blank" class="modelo-link" title="Abrir conversa">
            ${oc.modelo} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.75rem;"></i>
          </a>`
       : oc.modelo;
 
-    // A data vem como DD/MM/YYYY e preciso no formato YYYY-MM-DD pro dataset
+    // Data DD/MM/YYYY → YYYY-MM-DD para data-data
     const dataISO = oc.data_ocorrido.split("/").reverse().join("-");
 
     const tr = document.createElement("tr");
@@ -183,12 +198,11 @@ const occurrencesApp = (() => {
       : oc.modelo;
 
     tr.querySelector(".td-modelo").innerHTML = modeloHtml;
-    tr.querySelector(".badge-cor").textContent  = oc.cor;
+    tr.querySelector(".badge-cor").textContent = oc.cor;
     tr.querySelector(".badge-tipo").textContent = oc.tipo_erro;
     tr.querySelector(".badge-tipo").className   = `badge-tipo badge-tipo-${tipoCss}`;
     tr.querySelector(".td-data").innerHTML = `${oc.data_ocorrido}<br/><small>${oc.hora_ocorrido}</small>`;
 
-    // Animação de flash pra indicar que a linha mudou
     tr.classList.remove("tr-new-flash");
     void tr.offsetWidth;
     tr.classList.add("tr-new-flash");
@@ -212,144 +226,73 @@ const occurrencesApp = (() => {
 
 
 // ═════════════════════════════════════════════════════════════
-// MÓDULO DE KITS + CORES
-// Cascata: Modelo → Kit → Combinação de cor
+// MÓDULO DE MÚLTIPLAS CORES
 // Compartilhado entre nova ocorrência e edição
 // ═════════════════════════════════════════════════════════════
 const coresApp = (() => {
 
   const MAX_CORES = 6;
-  let _contador = 0;  // índice incremental pra IDs únicos das linhas
-  let _total    = 0;  // quantidade atual de linhas visíveis
+  let _contador = 0;   // índice incremental para IDs únicos das linhas
+  let _total    = 0;   // quantidade atual de linhas de cor visíveis
 
-  // Pega o modelo que tá selecionado no momento
-  function _getModelo() {
-    return document.getElementById("modelo")?.value || "";
+  /** Retorna as cores disponíveis do modelo atualmente selecionado. */
+  function _getCoresDoModelo() {
+    const modelo = document.getElementById("modelo")?.value;
+    return (window.CATALOGO || {})[modelo] || [];
   }
 
-  // Retorna o objeto { "Kit 1": [...], "Kit 2": [...] } do modelo
-  function _getKitsDoModelo(modelo) {
-    return (window.CATALOGO || {})[modelo] || {};
-  }
-
-  // Dado um modelo e uma cor armazenada, descobre qual kit ela pertence
-  // Útil na edição pra pré-selecionar o kit correto
-  function _getKitDaCor(modelo, cor) {
-    const kits = _getKitsDoModelo(modelo);
-    for (const [kit, cores] of Object.entries(kits)) {
-      if (cores.includes(cor)) return kit;
-    }
-    return null;
-  }
-
-  // Preenche as opções do select de kit com base no modelo
-  function _preencherKitSelect(kitSelect, modelo, kitSelecionado) {
-    const kits = _getKitsDoModelo(modelo);
-    const nomes = Object.keys(kits);
-
-    kitSelect.innerHTML = "";
-
-    if (!modelo || nomes.length === 0) {
-      kitSelect.appendChild(new Option("— Kit —", ""));
-      kitSelect.disabled = true;
-      return;
-    }
-
-    // Placeholder só aparece se tiver mais de 1 kit pra escolher
-    if (nomes.length > 1) {
-      kitSelect.appendChild(new Option("— Kit —", ""));
-    }
-
-    nomes.forEach(kit => {
-      const opt = new Option(kit, kit);
-      if (kit === kitSelecionado) opt.selected = true;
-      kitSelect.appendChild(opt);
-    });
-
-    kitSelect.disabled = false;
-
-    // Auto-seleciona se só existe 1 kit — menos clique pra usuária
-    if (nomes.length === 1 && !kitSelecionado) {
-      kitSelect.value = nomes[0];
-    }
-  }
-
-  // Preenche as opções do select de cor com base no kit escolhido
-  function _preencherCorSelect(corSelect, modelo, kit, corSelecionada) {
-    const kits = _getKitsDoModelo(modelo);
-    const cores = (kit && kits[kit]) ? kits[kit] : [];
-
-    corSelect.innerHTML = "";
-
-    if (cores.length === 0) {
-      corSelect.appendChild(new Option(kit ? "— Selecione a combinação —" : "— Selecione o kit primeiro —", ""));
-      corSelect.disabled = true;
-      return;
-    }
-
-    corSelect.appendChild(new Option("— Selecione a combinação —", ""));
-    cores.forEach(cor => {
-      const opt = new Option(cor, cor);
-      if (cor === corSelecionada) opt.selected = true;
-      corSelect.appendChild(opt);
-    });
-    corSelect.disabled = false;
-  }
-
-  // Adiciona uma linha de cor (kit-select + cor-select) no container
-  function adicionar(kitInicial = "", valorInicial = "") {
+  /** Adiciona uma linha de seleção de cor ao container. */
+  function adicionar(valorInicial = "") {
     if (_total >= MAX_CORES) return;
 
     const container = document.getElementById("cores-container");
     if (!container) return;
 
-    const idx    = _contador++;
-    const modelo = _getModelo();
+    const idx = _contador++;
     _total++;
 
     const row = document.createElement("div");
     row.className = "cor-row";
     row.id = `cor-row-${idx}`;
 
-    // Numeração ordinal da linha
+    // Número ordinal
     const num = document.createElement("span");
     num.className = "cor-num";
     num.textContent = _total;
     row.appendChild(num);
 
-    // Select do kit
-    const kitSelect = document.createElement("select");
-    kitSelect.className = "kit-select";
-    _preencherKitSelect(kitSelect, modelo, kitInicial);
+    // Select de cores
+    const cores = _getCoresDoModelo();
+    const select = document.createElement("select");
+    select.name = "cor[]";
+    select.className = "cor-select";
+    select.required = true;
 
-    // Quando mudar o kit, recarrego as cores daquele kit
-    kitSelect.addEventListener("change", () => {
-      _preencherCorSelect(corSelect, _getModelo(), kitSelect.value, "");
-      _atualizarBotoes();
+    const optVazio = new Option("— Selecione a cor —", "");
+    select.appendChild(optVazio);
+
+    cores.forEach(cor => {
+      const opt = new Option(cor, cor);
+      if (cor === valorInicial) opt.selected = true;
+      select.appendChild(opt);
     });
-    row.appendChild(kitSelect);
 
-    // Select da combinação de cor — esse é o que vai pro backend
-    const corSelect = document.createElement("select");
-    corSelect.name      = "cor[]";
-    corSelect.className = "cor-select";
-    corSelect.required  = true;
-    _preencherCorSelect(corSelect, modelo, kitSelect.value, valorInicial);
-    row.appendChild(corSelect);
+    select.disabled = cores.length === 0;
+    row.appendChild(select);
 
-    // Botão de remover a linha
+    // Botão remover
     const btnRem = document.createElement("button");
-    btnRem.type      = "button";
+    btnRem.type = "button";
     btnRem.className = "btn-remove-cor";
     btnRem.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-    btnRem.onclick   = () => remover(idx);
+    btnRem.onclick = () => remover(idx);
     row.appendChild(btnRem);
 
     container.appendChild(row);
     _atualizarBotoes();
   }
 
-  // Remove a linha pelo seu índice
+  /** Remove uma linha de cor pelo seu idx. */
   function remover(idx) {
     const row = document.getElementById(`cor-row-${idx}`);
     if (!row) return;
@@ -359,7 +302,7 @@ const coresApp = (() => {
     _atualizarBotoes();
   }
 
-  // Renumera os círculos após uma remoção pra não ter buraco na numeração
+  /** Renumera os círculos ordinais após remoção. */
   function _renumerarLinhas() {
     document.querySelectorAll(".cor-row").forEach((row, i) => {
       const num = row.querySelector(".cor-num");
@@ -367,20 +310,30 @@ const coresApp = (() => {
     });
   }
 
-  // Quando o modelo muda: limpa tudo e recomeça com 1 linha em branco
+  /** Repovoar todos os selects com cores do novo modelo. */
   function repovoarSelects() {
-    _contador = 0;
-    _total    = 0;
-    const container = document.getElementById("cores-container");
-    if (container) container.innerHTML = "";
-    adicionar();
+    const cores = _getCoresDoModelo();
+
+    document.querySelectorAll(".cor-select").forEach(select => {
+      const valorAtual = select.value;
+      select.innerHTML = "";
+      select.appendChild(new Option("— Selecione a cor —", ""));
+
+      cores.forEach(cor => {
+        const opt = new Option(cor, cor);
+        if (cor === valorAtual) opt.selected = true;
+        select.appendChild(opt);
+      });
+
+      select.disabled = cores.length === 0;
+    });
   }
 
-  // Controla visibilidade do botão remover e do hint de máximo
+  /** Atualiza visibilidade dos botões remover e do botão adicionar. */
   function _atualizarBotoes() {
     const rows = document.querySelectorAll(".cor-row");
 
-    // O botão remover só aparece quando tem mais de 1 linha
+    // Oculta o botão remover quando só há 1 linha
     rows.forEach(row => {
       const btn = row.querySelector(".btn-remove-cor");
       if (btn) btn.style.display = rows.length > 1 ? "flex" : "none";
@@ -388,25 +341,20 @@ const coresApp = (() => {
 
     const btnAdd = document.getElementById("btn-add-cor");
     const hint   = document.getElementById("cores-hint");
+
     if (btnAdd) btnAdd.disabled = _total >= MAX_CORES;
     if (hint)   hint.style.display = _total >= MAX_CORES ? "block" : "none";
   }
 
-  // Inicializa com uma lista de cores existentes (edição) ou 1 linha vazia (criação)
+  /** Inicializa o container com uma lista de cores (vazia ou existentes). */
   function inicializar(coresIniciais = [""]) {
     _contador = 0;
     _total    = 0;
     const container = document.getElementById("cores-container");
     if (container) container.innerHTML = "";
 
-    const modelo = _getModelo();
-    const lista  = coresIniciais.length > 0 ? coresIniciais : [""];
-
-    lista.forEach(cor => {
-      // Descobre automaticamente qual kit aquela cor pertence
-      const kit = cor ? _getKitDaCor(modelo, cor.trim()) : "";
-      adicionar(kit || "", cor.trim());
-    });
+    const lista = coresIniciais.length > 0 ? coresIniciais : [""];
+    lista.forEach(cor => adicionar(cor.trim()));
   }
 
   return { adicionar, remover, repovoarSelects, inicializar, _atualizarBotoes };
@@ -427,25 +375,29 @@ const novaOcorrenciaApp = (() => {
 
     form.addEventListener("submit", _interceptarEnvio);
 
-    // Inicia com 1 linha em branco — modelo ainda não foi escolhido
+    // Inicia com 1 linha de cor vazia
     coresApp.inicializar([""]);
+
+    // Se o modelo já tem valor (ex: reload após erro de validação)
+    const modeloSelect = document.getElementById("modelo");
+    if (modeloSelect?.value) atualizarCores();
   }
 
-  // Chamado quando o select de modelo muda
+  /** Chamado quando o select de modelo muda. */
   function atualizarCores() {
-    const modelo  = document.getElementById("modelo")?.value;
-    const btnAdd  = document.getElementById("btn-add-cor");
+    const modelo = document.getElementById("modelo")?.value;
+    coresApp.repovoarSelects();
 
-    // Mostra o botão "adicionar cor" só depois que o modelo foi escolhido
+    // Mostra botão "adicionar cor" apenas após modelo ser escolhido
+    const btnAdd = document.getElementById("btn-add-cor");
     if (btnAdd) btnAdd.style.display = modelo ? "" : "none";
 
-    // Recarrega as linhas de kit + cor do zero pro novo modelo
-    coresApp.repovoarSelects();
+    coresApp._atualizarBotoes();
   }
 
   function adicionarCor() { coresApp.adicionar(); }
 
-  // ── Preview da imagem selecionada ─────────────────────────
+  // ── Preview de imagem ──────────────────────────────────────
 
   function previewImagem(input) {
     const arquivo = input.files[0];
@@ -477,11 +429,11 @@ const novaOcorrenciaApp = (() => {
     }
   }
 
-  // ── Intercepta o envio pra avisar quando não tem print ────
+  // ── Intercepta envio para avisar sobre print ausente ──────
 
   function _interceptarEnvio(e) {
-    if (_confirmarEnvio)   return;
-    if (_printSelecionado) return;
+    if (_confirmarEnvio)   return;  // já confirmado
+    if (_printSelecionado) return;  // tem print, ok
     e.preventDefault();
     document.getElementById("modal-sem-print").style.display = "flex";
   }
@@ -497,11 +449,8 @@ const novaOcorrenciaApp = (() => {
     document.getElementById("form-nova")?.submit();
   }
 
-  return {
-    init, atualizarCores, adicionarCor,
-    previewImagem, removerImagem, handleDrop,
-    cancelarSemPrint, confirmarSemPrint,
-  };
+  return { init, atualizarCores, adicionarCor, previewImagem, removerImagem,
+           handleDrop, cancelarSemPrint, confirmarSemPrint };
 })();
 
 
@@ -513,32 +462,34 @@ const editarApp = (() => {
   function init() {
     if (!document.getElementById("form-editar")) return;
 
-    // Cores armazenadas como "Bege/Preto, Marrom/Cinza" → ["Bege/Preto", "Marrom/Cinza"]
+    // Cores existentes: "Preto, Branco" → ["Preto", "Branco"]
     const coresIniciais = window.CORES_ATUAIS || [""];
     coresApp.inicializar(coresIniciais);
   }
 
-  // Quando muda o modelo na edição, recomeça as linhas de cor
-  function atualizarCores() { coresApp.repovoarSelects(); }
+  function atualizarCores() {
+    coresApp.repovoarSelects();
+    coresApp._atualizarBotoes();
+  }
 
-  function adicionarCor()       { coresApp.adicionar(); }
-  function previewImagem(input) { novaOcorrenciaApp.previewImagem(input); }
-  function removerImagem()      { novaOcorrenciaApp.removerImagem(); }
-  function handleDrop(e)        { novaOcorrenciaApp.handleDrop(e); }
+  function adicionarCor()          { coresApp.adicionar(); }
+  function previewImagem(input)    { novaOcorrenciaApp.previewImagem(input); }
+  function removerImagem()         { novaOcorrenciaApp.removerImagem(); }
+  function handleDrop(e)           { novaOcorrenciaApp.handleDrop(e); }
 
   return { init, atualizarCores, adicionarCor, previewImagem, removerImagem, handleDrop };
 })();
 
 
 // ─────────────────────────────────────────────────────────────
-// INICIALIZAÇÃO — detecta qual tela tá ativa pelo elemento chave
+// INICIALIZAÇÃO — detecta qual tela está ativa
 // ─────────────────────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("tbody-ocorrencias")) occurrencesApp.init();
   if (document.getElementById("form-nova"))         novaOcorrenciaApp.init();
   if (document.getElementById("form-editar"))       editarApp.init();
 
-  // Fecha o modal clicando no overlay escuro ao redor
+  // Fecha modais clicando no overlay
   document.getElementById("modal-delete")?.addEventListener("click", (e) => {
     if (e.target.id === "modal-delete") occurrencesApp.fecharModal();
   });
