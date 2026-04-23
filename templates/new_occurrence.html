@@ -4,233 +4,308 @@
 
 {% block content %}
 <div class="page-header">
-    <div>
-        <h2><i class="fa-solid fa-plus-circle"></i> Nova Ocorrência</h2>
-        <p class="page-subtitle">Registre um erro de pedido</p>
-    </div>
-
-    <a href="{{ url_for('occurrences.listar') }}" class="btn btn-ghost">
-        <i class="fa-solid fa-arrow-left"></i> Voltar
-    </a>
+  <div>
+    <h2><i class="fa-solid fa-plus-circle"></i> Nova Ocorrência</h2>
+    <p class="page-subtitle">Registre um erro de pedido</p>
+  </div>
+  <a href="{{ url_for('occurrences.listar') }}" class="btn btn-ghost">
+    <i class="fa-solid fa-arrow-left"></i> Voltar
+  </a>
 </div>
 
 <div class="card form-card">
-    <form id="form-nova"
-          method="POST"
-          action="{{ url_for('occurrences.nova') }}"
-          enctype="multipart/form-data"
-          novalidate>
+  <form id="form-nova" method="POST"
+        action="{{ url_for('occurrences.nova') }}"
+        enctype="multipart/form-data"
+        novalidate>
 
-        <div class="form-section">
-            <h4 class="form-section-title">
-                <i class="fa-solid fa-tag"></i> Dados do Produto
-            </h4>
+    <div class="form-section">
+      <h4 class="form-section-title">
+        <i class="fa-solid fa-tag"></i> Dados do Produto
+      </h4>
 
-            <div class="form-grid">
+      <div class="form-grid">
 
-                <!-- MODELO -->
-                <div class="form-group">
-                    <label for="modelo">Modelo <span class="required">*</span></label>
-                    <select id="modelo"
-                            name="modelo"
-                            required
-                            onchange="novaOcorrenciaApp.atualizarCores()">
-                        <option value="">— Selecione o modelo —</option>
-                        {% for modelo in catalogo.keys() %}
-                            <option value="{{ modelo }}">{{ modelo }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+        <!-- MODELO -->
+        <div class="form-group">
+          <label for="modelo">Modelo <span class="required">*</span></label>
+          <select id="modelo" name="modelo" required onchange="_popularCores()">
+            <option value="">— Selecione o modelo —</option>
+            {% for modelo in catalogo.keys() %}
+            <option value="{{ modelo }}">{{ modelo }}</option>
+            {% endfor %}
+          </select>
+        </div>
 
-                <!-- COR (múltiplas — até 6) -->
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label>
-                        Cor(es) Incorreta(s) <span class="required">*</span>
-                        <span style="color:var(--text-muted);font-weight:400;font-size:0.8rem;">
-                            — adicione uma por pedido incorreto
-                        </span>
-                    </label>
-
-                    <div id="cores-container">
-                        <!-- Primeira cor (sempre visível) -->
-                        <div class="cor-row" id="cor-row-0">
-                            <span class="cor-num">1</span>
-                            <select name="cor[]" class="cor-select" required disabled>
-                                <option value="">— Selecione primeiro o modelo —</option>
-                            </select>
-
-                            <!-- Botão de remover (oculto na primeira linha) -->
-                            <button type="button"
-                                    class="btn-remove-cor"
-                                    style="display:none;"
-                                    onclick="novaOcorrenciaApp.removerCor(0)">
-                                <i class="fa-solid fa-xmark"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Botão adicionar cor -->
-                    <button type="button"
-                            class="btn-add-cor"
-                            id="btn-add-cor"
-                            onclick="novaOcorrenciaApp.adicionarCor()"
-                            style="display:none;">
-                        <i class="fa-solid fa-plus"></i> Adicionar outra cor incorreta
-                    </button>
-
-                    <small class="cores-hint" id="cores-hint" style="display:none;">
-                        <i class="fa-solid fa-circle-info"></i> Máximo de 6 cores por ocorrência
-                    </small>
-                </div>
-
-                <!-- TIPO DE ERRO -->
-                <div class="form-group">
-                    <label for="tipo_erro">Tipo de Erro <span class="required">*</span></label>
-                    <select id="tipo_erro" name="tipo_erro" required>
-                        <option value="">— Selecione o tipo —</option>
-                        {% for tipo in tipos_erro %}
-                            <option value="{{ tipo }}">{{ tipo }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
+        <!-- COR (múltiplas — até 6) -->
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <label>Cor(es) Incorreta(s) <span class="required">*</span>
+            <span style="color:var(--text-muted);font-weight:400;font-size:0.8rem;"> — adicione uma por pedido incorreto</span>
+          </label>
+          <div id="cores-container">
+            <div class="cor-row" id="cor-row-0">
+              <span class="cor-num">1</span>
+              <select name="cor[]" id="cor-select-0" class="cor-select" required disabled>
+                <option value="">— Selecione primeiro o modelo —</option>
+              </select>
+              <button type="button" class="btn-remove-cor" style="display:none;"
+                      onclick="_removerCorLinha(this)">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
             </div>
+          </div>
+          <button type="button" class="btn-add-cor" id="btn-add-cor"
+                  onclick="_adicionarCorLinha()" style="display:none;">
+            <i class="fa-solid fa-plus"></i> Adicionar outra cor incorreta
+          </button>
+          <small class="cores-hint" id="cores-hint" style="display:none;">
+            <i class="fa-solid fa-circle-info"></i> Máximo de 6 cores por ocorrência
+          </small>
         </div>
 
-        <div class="form-section">
-            <h4 class="form-section-title">
-                <i class="fa-solid fa-clock"></i> Data e Hora do Ocorrido
-            </h4>
-
-            <div class="form-grid">
-
-                <div class="form-group">
-                    <label for="data_ocorrido">Data <span class="required">*</span></label>
-                    <input type="date"
-                           id="data_ocorrido"
-                           name="data_ocorrido"
-                           value="{{ hoje }}"
-                           required />
-                </div>
-
-                <div class="form-group">
-                    <label for="hora_ocorrido">Hora <span class="required">*</span></label>
-                    <input type="time"
-                           id="hora_ocorrido"
-                           name="hora_ocorrido"
-                           value="{{ hora_atual }}"
-                           required />
-                </div>
-
-            </div>
+        <!-- TIPO DE ERRO -->
+        <div class="form-group">
+          <label for="tipo_erro">Tipo de Erro <span class="required">*</span></label>
+          <select id="tipo_erro" name="tipo_erro" required>
+            <option value="">— Selecione o tipo —</option>
+            {% for tipo in tipos_erro %}
+            <option value="{{ tipo }}">{{ tipo }}</option>
+            {% endfor %}
+          </select>
         </div>
 
-        <div class="form-section">
-            <h4 class="form-section-title">
-                <i class="fa-solid fa-circle-info"></i> Informações Adicionais
-                <span class="optional-label">(opcionais)</span>
-            </h4>
+      </div>
+    </div>
 
-            <div class="form-grid">
+    <div class="form-section">
+      <h4 class="form-section-title">
+        <i class="fa-solid fa-clock"></i> Data e Hora do Ocorrido
+      </h4>
 
-                <div class="form-group">
-                    <label for="nome_cliente">Nome do Cliente</label>
-                    <input type="text"
-                           id="nome_cliente"
-                           name="nome_cliente"
-                           placeholder="Ex.: Maria Silva"
-                           maxlength="200" />
-                </div>
+      <div class="form-grid">
 
-                <div class="form-group">
-                    <label for="link_conversa">Link da Conversa</label>
-                    <input type="text"
-                           id="link_conversa"
-                           name="link_conversa"
-                           placeholder="Cole o link aqui" />
-                </div>
-
-            </div>
-
-            <!-- UPLOAD DO PRINT -->
-            <div class="form-group form-group-upload">
-                <label for="print_conversa">
-                    Print da Conversa / Pedido
-                </label>
-
-                <div class="upload-area"
-                     id="upload-area"
-                     onclick="document.getElementById('print_conversa').click()"
-                     ondragover="event.preventDefault()"
-                     ondrop="novaOcorrenciaApp.handleDrop(event)">
-
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <p>Clique ou arraste uma imagem aqui</p>
-                    <small>PNG, JPG, JPEG, WEBP — máx. 10 MB</small>
-                </div>
-
-                <input type="file"
-                       id="print_conversa"
-                       name="print_conversa"
-                       accept="image/*"
-                       style="display:none;"
-                       onchange="novaOcorrenciaApp.previewImagem(this)" />
-
-                <div id="preview-container" style="display:none;">
-                    <img id="preview-img" src="" alt="Preview" />
-                    <button type="button"
-                            class="btn-remove-preview"
-                            onclick="novaOcorrenciaApp.removerImagem()">
-                        <i class="fa-solid fa-xmark"></i> Remover
-                    </button>
-                </div>
-            </div>
+        <!-- DATA -->
+        <div class="form-group">
+          <label for="data_ocorrido">Data <span class="required">*</span></label>
+          <input
+            type="date"
+            id="data_ocorrido"
+            name="data_ocorrido"
+            value="{{ hoje }}"
+            required
+          />
         </div>
 
-        <!-- AÇÕES -->
-        <div class="form-actions">
-            <a href="{{ url_for('occurrences.listar') }}" class="btn btn-ghost">
-                <i class="fa-solid fa-xmark"></i> Cancelar
-            </a>
-
-            <button type="submit" class="btn btn-primary" id="btn-salvar">
-                <i class="fa-solid fa-floppy-disk"></i> Salvar Ocorrência
-            </button>
+        <!-- HORA -->
+        <div class="form-group">
+          <label for="hora_ocorrido">Hora <span class="required">*</span></label>
+          <input
+            type="time"
+            id="hora_ocorrido"
+            name="hora_ocorrido"
+            value="{{ hora_atual }}"
+            required
+          />
         </div>
 
-    </form>
-</div>
+      </div>
+    </div>
 
-<!-- MODAL -->
-<div class="modal-overlay" id="modal-sem-print" style="display:none;">
-    <div class="modal-box">
+    <div class="form-section">
+      <h4 class="form-section-title">
+        <i class="fa-solid fa-circle-info"></i> Informações Adicionais
+        <span class="optional-label">(opcionais)</span>
+      </h4>
 
-        <div class="modal-icon modal-icon-warn">
-            <i class="fa-solid fa-triangle-exclamation"></i>
+      <div class="form-grid">
+
+        <!-- NOME DO CLIENTE -->
+        <div class="form-group">
+          <label for="nome_cliente">Nome do Cliente</label>
+          <input
+            type="text"
+            id="nome_cliente"
+            name="nome_cliente"
+            placeholder="Ex.: Maria Silva"
+            maxlength="200"
+          />
         </div>
 
-        <h3>Sem Print Anexado</h3>
-        <p>Você está salvando esta ocorrência <strong>sem print</strong>. Deseja continuar?</p>
-
-        <div class="modal-actions">
-            <button class="btn btn-ghost" onclick="novaOcorrenciaApp.cancelarSemPrint()">
-                <i class="fa-solid fa-arrow-left"></i> Voltar e adicionar
-            </button>
-
-            <button class="btn btn-primary" onclick="novaOcorrenciaApp.confirmarSemPrint()">
-                <i class="fa-solid fa-check"></i> Continuar sem print
-            </button>
+        <!-- LINK DA CONVERSA -->
+        <div class="form-group">
+          <label for="link_conversa">Link da Conversa</label>
+          <input
+            type="text"
+            id="link_conversa"
+            name="link_conversa"
+            placeholder="Cole o link aqui"
+          />
         </div>
+
+      </div>
+
+      <!-- UPLOAD DO PRINT -->
+      <div class="form-group form-group-upload">
+        <label for="print_conversa">
+          Print da Conversa / Pedido
+        </label>
+        <div class="upload-area" id="upload-area"
+             onclick="document.getElementById('print_conversa').click()"
+             ondragover="event.preventDefault()"
+             ondrop="novaOcorrenciaApp.handleDrop(event)">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <p>Clique ou arraste uma imagem aqui</p>
+          <small>PNG, JPG, JPEG, WEBP — máx. 10 MB</small>
+        </div>
+        <input
+          type="file"
+          id="print_conversa"
+          name="print_conversa"
+          accept="image/*"
+          style="display:none;"
+          onchange="novaOcorrenciaApp.previewImagem(this)"
+        />
+        <!-- Preview da imagem selecionada -->
+        <div id="preview-container" style="display:none;">
+          <img id="preview-img" src="" alt="Preview" />
+          <button type="button" class="btn-remove-preview"
+                  onclick="novaOcorrenciaApp.removerImagem()">
+            <i class="fa-solid fa-xmark"></i> Remover
+          </button>
+        </div>
+      </div>
 
     </div>
+
+    <!-- ── Ações do formulário ─────────────────────────────── -->
+    <div class="form-actions">
+      <a href="{{ url_for('occurrences.listar') }}" class="btn btn-ghost">
+        <i class="fa-solid fa-xmark"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-primary" id="btn-salvar">
+        <i class="fa-solid fa-floppy-disk"></i> Salvar Ocorrência
+      </button>
+    </div>
+
+  </form>
+</div>
+
+<!-- ── Modal: confirmar sem print ────────────────────────── -->
+<div class="modal-overlay" id="modal-sem-print" style="display:none;">
+  <div class="modal-box">
+    <div class="modal-icon modal-icon-warn">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+    </div>
+    <h3>Sem Print Anexado</h3>
+    <p>Você está salvando esta ocorrência <strong>sem print</strong>. Deseja continuar?</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="novaOcorrenciaApp.cancelarSemPrint()">
+        <i class="fa-solid fa-arrow-left"></i> Voltar e adicionar
+      </button>
+      <button class="btn btn-primary" onclick="novaOcorrenciaApp.confirmarSemPrint()">
+        <i class="fa-solid fa-check"></i> Continuar sem print
+      </button>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    window.CATALOGO = {{ catalogo | tojson }};
-    window.MODO_EDICAO = false;
-</script>
+  // Catálogo de modelos e cores vindo do servidor
+  window.CATALOGO = {{ catalogo | tojson }};
 
+  const _MAX_CORES = 6;
+
+  // Popula todos os selects de cor existentes com base no modelo selecionado
+  function _popularCores() {
+    const modelo = document.getElementById("modelo").value;
+    const cores  = (window.CATALOGO[modelo] || []);
+
+    document.querySelectorAll(".cor-select").forEach(function(sel) {
+      var atual = sel.value;
+      sel.innerHTML = "";
+      var opt0 = document.createElement("option");
+      opt0.value = ""; opt0.textContent = "— Selecione a cor —";
+      sel.appendChild(opt0);
+      cores.forEach(function(c) {
+        var opt = document.createElement("option");
+        opt.value = c; opt.textContent = c;
+        if (c === atual) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.disabled = (cores.length === 0);
+    });
+
+    // Mostra botão adicionar
+    var btn = document.getElementById("btn-add-cor");
+    if (btn) btn.style.display = modelo ? "" : "none";
+
+    _recontarLinhas();
+  }
+
+  // Adiciona uma nova linha de cor
+  function _adicionarCorLinha() {
+    var container = document.getElementById("cores-container");
+    var total = container.querySelectorAll(".cor-row").length;
+    if (total >= _MAX_CORES) return;
+
+    var modelo = document.getElementById("modelo").value;
+    var cores  = (window.CATALOGO[modelo] || []);
+
+    var row = document.createElement("div");
+    row.className = "cor-row";
+
+    var num = document.createElement("span");
+    num.className = "cor-num";
+    num.textContent = total + 1;
+    row.appendChild(num);
+
+    var sel = document.createElement("select");
+    sel.name = "cor[]"; sel.className = "cor-select"; sel.required = true;
+    var opt0 = document.createElement("option");
+    opt0.value = ""; opt0.textContent = "— Selecione a cor —";
+    sel.appendChild(opt0);
+    cores.forEach(function(c) {
+      var opt = document.createElement("option");
+      opt.value = c; opt.textContent = c;
+      sel.appendChild(opt);
+    });
+    sel.disabled = (cores.length === 0);
+    row.appendChild(sel);
+
+    var btnRem = document.createElement("button");
+    btnRem.type = "button"; btnRem.className = "btn-remove-cor";
+    btnRem.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    btnRem.onclick = function() { _removerCorLinha(btnRem); };
+    row.appendChild(btnRem);
+
+    container.appendChild(row);
+    _recontarLinhas();
+  }
+
+  // Remove a linha de cor clicada
+  function _removerCorLinha(btn) {
+    var row = btn.closest(".cor-row");
+    if (row) row.remove();
+    _recontarLinhas();
+  }
+
+  // Atualiza números ordinais e visibilidade dos botões
+  function _recontarLinhas() {
+    var container = document.getElementById("cores-container");
+    var rows = container.querySelectorAll(".cor-row");
+    rows.forEach(function(row, i) {
+      var num = row.querySelector(".cor-num");
+      if (num) num.textContent = i + 1;
+      var btn = row.querySelector(".btn-remove-cor");
+      if (btn) btn.style.display = rows.length > 1 ? "flex" : "none";
+    });
+    var btnAdd = document.getElementById("btn-add-cor");
+    var hint   = document.getElementById("cores-hint");
+    if (btnAdd) btnAdd.disabled = rows.length >= _MAX_CORES;
+    if (hint)   hint.style.display = rows.length >= _MAX_CORES ? "block" : "none";
+  }
+</script>
 <script src="{{ url_for('static', filename='js/occurrences.js') }}"></script>
 {% endblock %}
