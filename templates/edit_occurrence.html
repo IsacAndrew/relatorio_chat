@@ -29,7 +29,7 @@
         <!-- MODELO -->
         <div class="form-group">
           <label for="modelo">Modelo <span class="required">*</span></label>
-          <select id="modelo" name="modelo" required onchange="editarApp.atualizarCores()">
+          <select id="modelo" name="modelo" required onchange="_popularCores()">
             <option value="">— Selecione o modelo —</option>
             {% for modelo in catalogo.keys() %}
             <option value="{{ modelo }}" {% if modelo == oc.modelo %}selected{% endif %}>
@@ -45,10 +45,10 @@
             <span style="color:var(--text-muted);font-weight:400;font-size:0.8rem;"> — adicione uma por pedido incorreto</span>
           </label>
           <div id="cores-container">
-            <!-- Cores existentes serão inseridas pelo JS ao carregar -->
+            <!-- Populado pelo script inline abaixo ao carregar a página -->
           </div>
           <button type="button" class="btn-add-cor" id="btn-add-cor"
-                  onclick="editarApp.adicionarCor()">
+                  onclick="_adicionarCorLinha()">
             <i class="fa-solid fa-plus"></i> Adicionar outra cor incorreta
           </button>
           <small class="cores-hint" id="cores-hint">
@@ -212,9 +212,102 @@
 {% block extra_js %}
 <script>
   window.CATALOGO    = {{ catalogo | tojson }};
-  // Cores armazenadas como string separada por vírgula → array
-  window.CORES_ATUAIS = {{ oc.cor | tojson }}.split(",").map(c => c.trim());
-  window.MODO_EDICAO  = true;
+
+  const _MAX_CORES = 6;
+
+  // Popula todos os selects de cor com base no modelo selecionado
+  function _popularCores() {
+    var modelo = document.getElementById("modelo").value;
+    var cores  = (window.CATALOGO[modelo] || []);
+    document.querySelectorAll(".cor-select").forEach(function(sel) {
+      var atual = sel.value;
+      sel.innerHTML = "";
+      var opt0 = document.createElement("option");
+      opt0.value = ""; opt0.textContent = "— Selecione a cor —";
+      sel.appendChild(opt0);
+      cores.forEach(function(c) {
+        var opt = document.createElement("option");
+        opt.value = c; opt.textContent = c;
+        if (c === atual) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.disabled = (cores.length === 0);
+    });
+    var btn = document.getElementById("btn-add-cor");
+    if (btn) btn.style.display = modelo ? "" : "none";
+    _recontarLinhas();
+  }
+
+  function _criarCorRow(valorSelecionado) {
+    var container = document.getElementById("cores-container");
+    var total = container.querySelectorAll(".cor-row").length;
+    var modelo = document.getElementById("modelo").value;
+    var cores  = (window.CATALOGO[modelo] || []);
+
+    var row = document.createElement("div");
+    row.className = "cor-row";
+
+    var num = document.createElement("span");
+    num.className = "cor-num";
+    num.textContent = total + 1;
+    row.appendChild(num);
+
+    var sel = document.createElement("select");
+    sel.name = "cor[]"; sel.className = "cor-select"; sel.required = true;
+    var opt0 = document.createElement("option");
+    opt0.value = ""; opt0.textContent = "— Selecione a cor —";
+    sel.appendChild(opt0);
+    cores.forEach(function(c) {
+      var opt = document.createElement("option");
+      opt.value = c; opt.textContent = c;
+      if (c === valorSelecionado) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.disabled = (cores.length === 0);
+    row.appendChild(sel);
+
+    var btnRem = document.createElement("button");
+    btnRem.type = "button"; btnRem.className = "btn-remove-cor";
+    btnRem.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+    btnRem.onclick = function() { _removerCorLinha(btnRem); };
+    row.appendChild(btnRem);
+
+    container.appendChild(row);
+  }
+
+  function _adicionarCorLinha() {
+    var container = document.getElementById("cores-container");
+    if (container.querySelectorAll(".cor-row").length >= _MAX_CORES) return;
+    _criarCorRow("");
+    _recontarLinhas();
+  }
+
+  function _removerCorLinha(btn) {
+    var row = btn.closest(".cor-row");
+    if (row) row.remove();
+    _recontarLinhas();
+  }
+
+  function _recontarLinhas() {
+    var rows = document.querySelectorAll(".cor-row");
+    rows.forEach(function(row, i) {
+      var num = row.querySelector(".cor-num");
+      if (num) num.textContent = i + 1;
+      var btn = row.querySelector(".btn-remove-cor");
+      if (btn) btn.style.display = rows.length > 1 ? "flex" : "none";
+    });
+    var btnAdd = document.getElementById("btn-add-cor");
+    var hint   = document.getElementById("cores-hint");
+    if (btnAdd) btnAdd.disabled = rows.length >= _MAX_CORES;
+    if (hint)   hint.style.display = rows.length >= _MAX_CORES ? "block" : "none";
+  }
+
+  // Pré-popula as cores existentes ao carregar a página
+  document.addEventListener("DOMContentLoaded", function() {
+    var coresAtuais = {{ oc.cor | tojson }}.split(",").map(function(c){ return c.trim(); });
+    coresAtuais.forEach(function(cor) { _criarCorRow(cor); });
+    _recontarLinhas();
+  });
 </script>
 <script src="{{ url_for('static', filename='js/occurrences.js') }}"></script>
 {% endblock %}
