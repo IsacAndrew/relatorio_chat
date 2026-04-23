@@ -212,15 +212,23 @@
 
 {% block extra_js %}
 <script>
-  // Catálogo de modelos e cores vindo do servidor
   window.CATALOGO = {{ catalogo | tojson }};
 
   const _MAX_CORES = 6;
 
-  // Popula todos os selects de cor existentes com base no modelo selecionado
   function _popularCores() {
-    const modelo = document.getElementById("modelo").value;
-    const cores  = (window.CATALOGO[modelo] || []);
+    var modelo = document.getElementById("modelo").value;
+    var cores  = window.CATALOGO[modelo];
+
+    // DEBUG — aparece no console do navegador (F12)
+    console.log("[DEBUG] modelo selecionado:", modelo);
+    console.log("[DEBUG] cores encontradas:", cores);
+    console.log("[DEBUG] CATALOGO completo:", window.CATALOGO);
+
+    if (!cores || cores.length === 0) {
+      console.warn("[DEBUG] Nenhuma cor encontrada para este modelo!");
+      return;
+    }
 
     document.querySelectorAll(".cor-select").forEach(function(sel) {
       var atual = sel.value;
@@ -234,24 +242,27 @@
         if (c === atual) opt.selected = true;
         sel.appendChild(opt);
       });
-      sel.disabled = (cores.length === 0);
+      sel.disabled = false;  // força habilitar
+      sel.removeAttribute("disabled");  // remove atributo HTML também
     });
 
-    // Mostra botão adicionar
     var btn = document.getElementById("btn-add-cor");
-    if (btn) btn.style.display = modelo ? "" : "none";
-
+    if (btn) btn.style.display = "";
     _recontarLinhas();
   }
 
-  // Adiciona uma nova linha de cor
   function _adicionarCorLinha() {
     var container = document.getElementById("cores-container");
-    var total = container.querySelectorAll(".cor-row").length;
-    if (total >= _MAX_CORES) return;
+    if (container.querySelectorAll(".cor-row").length >= _MAX_CORES) return;
+    _criarCorRow("");
+    _recontarLinhas();
+  }
 
+  function _criarCorRow(valorSelecionado) {
+    var container = document.getElementById("cores-container");
+    var total = container.querySelectorAll(".cor-row").length;
     var modelo = document.getElementById("modelo").value;
-    var cores  = (window.CATALOGO[modelo] || []);
+    var cores  = window.CATALOGO[modelo] || [];
 
     var row = document.createElement("div");
     row.className = "cor-row";
@@ -269,32 +280,28 @@
     cores.forEach(function(c) {
       var opt = document.createElement("option");
       opt.value = c; opt.textContent = c;
+      if (c === valorSelecionado) opt.selected = true;
       sel.appendChild(opt);
     });
-    sel.disabled = (cores.length === 0);
     row.appendChild(sel);
 
     var btnRem = document.createElement("button");
     btnRem.type = "button"; btnRem.className = "btn-remove-cor";
     btnRem.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-    btnRem.onclick = function() { _removerCorLinha(btnRem); };
+    btnRem.onclick = function() { row.remove(); _recontarLinhas(); };
     row.appendChild(btnRem);
 
     container.appendChild(row);
-    _recontarLinhas();
   }
 
-  // Remove a linha de cor clicada
   function _removerCorLinha(btn) {
-    var row = btn.closest(".cor-row");
+    var row = btn.closest ? btn.closest(".cor-row") : btn.parentElement;
     if (row) row.remove();
     _recontarLinhas();
   }
 
-  // Atualiza números ordinais e visibilidade dos botões
   function _recontarLinhas() {
-    var container = document.getElementById("cores-container");
-    var rows = container.querySelectorAll(".cor-row");
+    var rows = document.querySelectorAll(".cor-row");
     rows.forEach(function(row, i) {
       var num = row.querySelector(".cor-num");
       if (num) num.textContent = i + 1;
