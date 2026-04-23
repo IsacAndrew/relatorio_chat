@@ -385,8 +385,32 @@ const novaOcorrenciaApp = (() => {
 
   /** Chamado quando o select de modelo muda. */
   function atualizarCores() {
-    const modelo = document.getElementById("modelo")?.value;
-    coresApp.repovoarSelects();
+    const modeloSelect = document.getElementById("modelo");
+    const modelo       = modeloSelect?.value || "";
+    const catalogo     = window.CATALOGO || {};
+    const cores        = catalogo[modelo] || [];
+
+    // Repovoar TODOS os selects de cor existentes no container
+    document.querySelectorAll(".cor-select").forEach(select => {
+      const valorAtual = select.value;
+      select.innerHTML = "";
+
+      const optVazio = document.createElement("option");
+      optVazio.value = "";
+      optVazio.textContent = "— Selecione a cor —";
+      select.appendChild(optVazio);
+
+      cores.forEach(cor => {
+        const opt = document.createElement("option");
+        opt.value = cor;
+        opt.textContent = cor;
+        if (cor === valorAtual) opt.selected = true;
+        select.appendChild(opt);
+      });
+
+      // Habilita se houver modelo selecionado com cores
+      select.disabled = (cores.length === 0);
+    });
 
     // Mostra botão "adicionar cor" apenas após modelo ser escolhido
     const btnAdd = document.getElementById("btn-add-cor");
@@ -468,7 +492,31 @@ const editarApp = (() => {
   }
 
   function atualizarCores() {
-    coresApp.repovoarSelects();
+    const modeloSelect = document.getElementById("modelo");
+    const modelo       = modeloSelect?.value || "";
+    const catalogo     = window.CATALOGO || {};
+    const cores        = catalogo[modelo] || [];
+
+    document.querySelectorAll(".cor-select").forEach(select => {
+      const valorAtual = select.value;
+      select.innerHTML = "";
+
+      const optVazio = document.createElement("option");
+      optVazio.value = "";
+      optVazio.textContent = "— Selecione a cor —";
+      select.appendChild(optVazio);
+
+      cores.forEach(cor => {
+        const opt = document.createElement("option");
+        opt.value = cor;
+        opt.textContent = cor;
+        if (cor === valorAtual) opt.selected = true;
+        select.appendChild(opt);
+      });
+
+      select.disabled = (cores.length === 0);
+    });
+
     coresApp._atualizarBotoes();
   }
 
