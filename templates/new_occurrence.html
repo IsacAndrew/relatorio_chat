@@ -171,34 +171,17 @@
   var _MAX_LINHAS = 6;
 
   /* Quando MODELO muda: repopula kits de todas as linhas existentes */
+  /* Quando MODELO muda: apaga tudo e cria 1 linha nova e limpa */
   function _popularCores() {
     var modelo  = document.getElementById("modelo").value;
-    var kitsObj = modelo ? (window.CATALOGO[modelo] || {}) : {};
-    var kitNomes = Object.keys(kitsObj);
-
-    document.querySelectorAll("#cores-container .kit-select").forEach(function(kitSel) {
-      var atual = kitSel.value;
-      kitSel.innerHTML = "";
-      kitSel.appendChild(new Option("— Selecione o Kit —", ""));
-      kitNomes.forEach(function(k) {
-        var opt = new Option(k, k);
-        if (k === atual) opt.selected = true;
-        kitSel.appendChild(opt);
-      });
-      kitSel.disabled = (kitNomes.length === 0);
-
-      // Limpa o select de cor desta linha
-      var corSel = kitSel.parentElement.querySelector(".cor-select");
-      if (corSel) {
-        corSel.innerHTML = "";
-        corSel.appendChild(new Option("— Selecione a combinação —", ""));
-        corSel.disabled = true;
-      }
-    });
-
+    // Limpa o container — evita qualquer estado corrompido
+    document.getElementById("cores-container").innerHTML = "";
+    if (modelo) {
+      _criarLinha("", "");
+      _recontarLinhas();
+    }
     var btn = document.getElementById("btn-add-cor");
     if (btn) btn.style.display = modelo ? "" : "none";
-    _recontarLinhas();
   }
 
   /* Quando KIT muda: popula cores desta linha */
@@ -226,28 +209,26 @@
     var row = document.createElement("div");
     row.className = "cor-row";
 
-    // Número
+    // Número ordinal
     var num = document.createElement("span");
-    num.className = "cor-num";
-    num.textContent = total + 1;
+    num.className = "cor-num"; num.textContent = total + 1;
     row.appendChild(num);
 
-    // Select Kit
+    // Select Kit — nunca disabled, sempre com opção vazia no topo
     var kitSel = document.createElement("select");
-    kitSel.name = "kit[]"; kitSel.className = "kit-select"; kitSel.required = true;
+    kitSel.name = "kit[]"; kitSel.className = "kit-select";
     kitSel.appendChild(new Option("— Kit —", ""));
     kitNomes.forEach(function(k) {
       var opt = new Option(k, k);
       if (k === kitValor) opt.selected = true;
       kitSel.appendChild(opt);
     });
-    kitSel.disabled = (kitNomes.length === 0);
     kitSel.onchange = function() { _popularCorDoKit(this); };
     row.appendChild(kitSel);
 
-    // Select Cor
+    // Select Cor — disabled até kit ser escolhido
     var corSel = document.createElement("select");
-    corSel.name = "cor[]"; corSel.className = "cor-select"; corSel.required = true;
+    corSel.name = "cor[]"; corSel.className = "cor-select";
     corSel.appendChild(new Option("— Combinação de cores —", ""));
     cores.forEach(function(c) {
       var opt = new Option(c, c);
@@ -269,17 +250,14 @@
 
   function _adicionarLinha() {
     if (document.querySelectorAll("#cores-container .cor-row").length >= _MAX_LINHAS) return;
-    _criarLinha("", "");
-    _recontarLinhas();
+    _criarLinha("", ""); _recontarLinhas();
   }
 
   function _recontarLinhas() {
     var rows = document.querySelectorAll("#cores-container .cor-row");
     rows.forEach(function(row, i) {
-      var n = row.querySelector(".cor-num");
-      if (n) n.textContent = i + 1;
-      var b = row.querySelector(".btn-remove-cor");
-      if (b) b.style.display = rows.length > 1 ? "flex" : "none";
+      var n = row.querySelector(".cor-num"); if (n) n.textContent = i + 1;
+      var b = row.querySelector(".btn-remove-cor"); if (b) b.style.display = rows.length > 1 ? "flex" : "none";
     });
     var btnAdd = document.getElementById("btn-add-cor");
     var hint   = document.getElementById("cores-hint");
@@ -287,11 +265,7 @@
     if (hint)   hint.style.display = rows.length >= _MAX_LINHAS ? "block" : "none";
   }
 
-  /* Inicia com 1 linha vazia ao carregar a página */
-  document.addEventListener("DOMContentLoaded", function() {
-    _criarLinha("", "");
-    _recontarLinhas();
-  });
+  /* Não cria linha no DOMContentLoaded — a linha aparece só após modelo ser escolhido */
 </script>
 <script src="{{ url_for('static', filename='js/occurrences.js') }}"></script>
 {% endblock %}
