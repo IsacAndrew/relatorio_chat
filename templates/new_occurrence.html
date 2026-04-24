@@ -37,29 +37,22 @@
           </select>
         </div>
 
-        <!-- COR (múltiplas — até 6) -->
+        <!-- PEDIDO(S) INCORRETO(S): Kit + Cor em cascata, até 6 linhas -->
         <div class="form-group" style="grid-column: 1 / -1;">
-          <label>Cor(es) Incorreta(s) <span class="required">*</span>
-            <span style="color:var(--text-muted);font-weight:400;font-size:0.8rem;"> — adicione uma por pedido incorreto</span>
+          <label>Pedido(s) Incorreto(s) <span class="required">*</span>
+            <span style="color:var(--text-muted);font-weight:400;font-size:0.8rem;">
+              — selecione o kit e a combinação de cores de cada pedido incorreto
+            </span>
           </label>
           <div id="cores-container">
-            <div class="cor-row" id="cor-row-0">
-              <span class="cor-num">1</span>
-              <select name="cor[]" id="cor-select-0" class="cor-select" required disabled>
-                <option value="">— Selecione primeiro o modelo —</option>
-              </select>
-              <button type="button" class="btn-remove-cor" style="display:none;"
-                      onclick="_removerCorLinha(this)">
-                <i class="fa-solid fa-xmark"></i>
-              </button>
-            </div>
+            <!-- Populado pelo JS ao carregar -->
           </div>
           <button type="button" class="btn-add-cor" id="btn-add-cor"
-                  onclick="_adicionarCorLinha()" style="display:none;">
-            <i class="fa-solid fa-plus"></i> Adicionar outra cor incorreta
+                  onclick="_adicionarLinha()" style="display:none;">
+            <i class="fa-solid fa-plus"></i> Adicionar outro pedido incorreto
           </button>
           <small class="cores-hint" id="cores-hint" style="display:none;">
-            <i class="fa-solid fa-circle-info"></i> Máximo de 6 cores por ocorrência
+            <i class="fa-solid fa-circle-info"></i> Máximo de 6 pedidos por ocorrência
           </small>
         </div>
 
@@ -83,31 +76,16 @@
       </h4>
 
       <div class="form-grid">
-
-        <!-- DATA -->
         <div class="form-group">
           <label for="data_ocorrido">Data <span class="required">*</span></label>
-          <input
-            type="date"
-            id="data_ocorrido"
-            name="data_ocorrido"
-            value="{{ hoje }}"
-            required
-          />
+          <input type="date" id="data_ocorrido" name="data_ocorrido"
+                 value="{{ hoje }}" required />
         </div>
-
-        <!-- HORA -->
         <div class="form-group">
           <label for="hora_ocorrido">Hora <span class="required">*</span></label>
-          <input
-            type="time"
-            id="hora_ocorrido"
-            name="hora_ocorrido"
-            value="{{ hora_atual }}"
-            required
-          />
+          <input type="time" id="hora_ocorrido" name="hora_ocorrido"
+                 value="{{ hora_atual }}" required />
         </div>
-
       </div>
     </div>
 
@@ -118,37 +96,20 @@
       </h4>
 
       <div class="form-grid">
-
-        <!-- NOME DO CLIENTE -->
         <div class="form-group">
           <label for="nome_cliente">Nome do Cliente</label>
-          <input
-            type="text"
-            id="nome_cliente"
-            name="nome_cliente"
-            placeholder="Ex.: Maria Silva"
-            maxlength="200"
-          />
+          <input type="text" id="nome_cliente" name="nome_cliente"
+                 placeholder="Ex.: Maria Silva" maxlength="200" />
         </div>
-
-        <!-- LINK DA CONVERSA -->
         <div class="form-group">
           <label for="link_conversa">Link da Conversa</label>
-          <input
-            type="text"
-            id="link_conversa"
-            name="link_conversa"
-            placeholder="Cole o link aqui"
-          />
+          <input type="text" id="link_conversa" name="link_conversa"
+                 placeholder="Cole o link aqui" />
         </div>
-
       </div>
 
-      <!-- UPLOAD DO PRINT -->
       <div class="form-group form-group-upload">
-        <label for="print_conversa">
-          Print da Conversa / Pedido
-        </label>
+        <label for="print_conversa">Print da Conversa / Pedido</label>
         <div class="upload-area" id="upload-area"
              onclick="document.getElementById('print_conversa').click()"
              ondragover="event.preventDefault()"
@@ -157,15 +118,9 @@
           <p>Clique ou arraste uma imagem aqui</p>
           <small>PNG, JPG, JPEG, WEBP — máx. 10 MB</small>
         </div>
-        <input
-          type="file"
-          id="print_conversa"
-          name="print_conversa"
-          accept="image/*"
-          style="display:none;"
-          onchange="novaOcorrenciaApp.previewImagem(this)"
-        />
-        <!-- Preview da imagem selecionada -->
+        <input type="file" id="print_conversa" name="print_conversa"
+               accept="image/*" style="display:none;"
+               onchange="novaOcorrenciaApp.previewImagem(this)" />
         <div id="preview-container" style="display:none;">
           <img id="preview-img" src="" alt="Preview" />
           <button type="button" class="btn-remove-preview"
@@ -174,10 +129,8 @@
           </button>
         </div>
       </div>
-
     </div>
 
-    <!-- ── Ações do formulário ─────────────────────────────── -->
     <div class="form-actions">
       <a href="{{ url_for('occurrences.listar') }}" class="btn btn-ghost">
         <i class="fa-solid fa-xmark"></i> Cancelar
@@ -190,7 +143,7 @@
   </form>
 </div>
 
-<!-- ── Modal: confirmar sem print ────────────────────────── -->
+<!-- Modal: confirmar sem print -->
 <div class="modal-overlay" id="modal-sem-print" style="display:none;">
   <div class="modal-box">
     <div class="modal-icon modal-icon-warn">
@@ -212,79 +165,99 @@
 
 {% block extra_js %}
 <script>
+  // Catálogo: { "Modelo": { "Kit 1": ["Cor1", ...], "Kit 2": [...] } }
   window.CATALOGO = {{ catalogo | tojson }};
 
-  const _MAX_CORES = 6;
+  var _MAX_LINHAS = 6;
 
+  /* Quando MODELO muda: repopula kits de todas as linhas existentes */
   function _popularCores() {
-    var modelo = document.getElementById("modelo").value;
-    var cores  = window.CATALOGO[modelo];
+    var modelo  = document.getElementById("modelo").value;
+    var kitsObj = modelo ? (window.CATALOGO[modelo] || {}) : {};
+    var kitNomes = Object.keys(kitsObj);
 
-    // DEBUG — aparece no console do navegador (F12)
-    console.log("[DEBUG] modelo selecionado:", modelo);
-    console.log("[DEBUG] cores encontradas:", cores);
-    console.log("[DEBUG] CATALOGO completo:", window.CATALOGO);
-
-    if (!cores || cores.length === 0) {
-      console.warn("[DEBUG] Nenhuma cor encontrada para este modelo!");
-      return;
-    }
-
-    document.querySelectorAll(".cor-select").forEach(function(sel) {
-      var atual = sel.value;
-      sel.innerHTML = "";
-      var opt0 = document.createElement("option");
-      opt0.value = ""; opt0.textContent = "— Selecione a cor —";
-      sel.appendChild(opt0);
-      cores.forEach(function(c) {
-        var opt = document.createElement("option");
-        opt.value = c; opt.textContent = c;
-        if (c === atual) opt.selected = true;
-        sel.appendChild(opt);
+    document.querySelectorAll("#cores-container .kit-select").forEach(function(kitSel) {
+      var atual = kitSel.value;
+      kitSel.innerHTML = "";
+      kitSel.appendChild(new Option("— Selecione o Kit —", ""));
+      kitNomes.forEach(function(k) {
+        var opt = new Option(k, k);
+        if (k === atual) opt.selected = true;
+        kitSel.appendChild(opt);
       });
-      sel.disabled = false;  // força habilitar
-      sel.removeAttribute("disabled");  // remove atributo HTML também
+      kitSel.disabled = (kitNomes.length === 0);
+
+      // Limpa o select de cor desta linha
+      var corSel = kitSel.parentElement.querySelector(".cor-select");
+      if (corSel) {
+        corSel.innerHTML = "";
+        corSel.appendChild(new Option("— Selecione a combinação —", ""));
+        corSel.disabled = true;
+      }
     });
 
     var btn = document.getElementById("btn-add-cor");
-    if (btn) btn.style.display = "";
+    if (btn) btn.style.display = modelo ? "" : "none";
     _recontarLinhas();
   }
 
-  function _adicionarCorLinha() {
-    var container = document.getElementById("cores-container");
-    if (container.querySelectorAll(".cor-row").length >= _MAX_CORES) return;
-    _criarCorRow("");
-    _recontarLinhas();
-  }
-
-  function _criarCorRow(valorSelecionado) {
-    var container = document.getElementById("cores-container");
-    var total = container.querySelectorAll(".cor-row").length;
+  /* Quando KIT muda: popula cores desta linha */
+  function _popularCorDoKit(kitSel) {
     var modelo = document.getElementById("modelo").value;
-    var cores  = window.CATALOGO[modelo] || [];
+    var kit    = kitSel.value;
+    var cores  = (modelo && kit) ? ((window.CATALOGO[modelo] || {})[kit] || []) : [];
+    var corSel = kitSel.parentElement.querySelector(".cor-select");
+    if (!corSel) return;
+    corSel.innerHTML = "";
+    corSel.appendChild(new Option("— Selecione a combinação —", ""));
+    cores.forEach(function(c) { corSel.appendChild(new Option(c, c)); });
+    corSel.disabled = (cores.length === 0);
+  }
+
+  /* Cria uma linha: [N] [Kit ▼] [Combinação ▼] [×] */
+  function _criarLinha(kitValor, corValor) {
+    var container = document.getElementById("cores-container");
+    var total     = container.querySelectorAll(".cor-row").length;
+    var modelo    = document.getElementById("modelo").value;
+    var kitsObj   = modelo ? (window.CATALOGO[modelo] || {}) : {};
+    var kitNomes  = Object.keys(kitsObj);
+    var cores     = (kitValor && kitsObj[kitValor]) ? kitsObj[kitValor] : [];
 
     var row = document.createElement("div");
     row.className = "cor-row";
 
+    // Número
     var num = document.createElement("span");
     num.className = "cor-num";
     num.textContent = total + 1;
     row.appendChild(num);
 
-    var sel = document.createElement("select");
-    sel.name = "cor[]"; sel.className = "cor-select"; sel.required = true;
-    var opt0 = document.createElement("option");
-    opt0.value = ""; opt0.textContent = "— Selecione a cor —";
-    sel.appendChild(opt0);
-    cores.forEach(function(c) {
-      var opt = document.createElement("option");
-      opt.value = c; opt.textContent = c;
-      if (c === valorSelecionado) opt.selected = true;
-      sel.appendChild(opt);
+    // Select Kit
+    var kitSel = document.createElement("select");
+    kitSel.name = "kit[]"; kitSel.className = "kit-select"; kitSel.required = true;
+    kitSel.appendChild(new Option("— Kit —", ""));
+    kitNomes.forEach(function(k) {
+      var opt = new Option(k, k);
+      if (k === kitValor) opt.selected = true;
+      kitSel.appendChild(opt);
     });
-    row.appendChild(sel);
+    kitSel.disabled = (kitNomes.length === 0);
+    kitSel.onchange = function() { _popularCorDoKit(this); };
+    row.appendChild(kitSel);
 
+    // Select Cor
+    var corSel = document.createElement("select");
+    corSel.name = "cor[]"; corSel.className = "cor-select"; corSel.required = true;
+    corSel.appendChild(new Option("— Combinação de cores —", ""));
+    cores.forEach(function(c) {
+      var opt = new Option(c, c);
+      if (c === corValor) opt.selected = true;
+      corSel.appendChild(opt);
+    });
+    corSel.disabled = (cores.length === 0);
+    row.appendChild(corSel);
+
+    // Botão remover
     var btnRem = document.createElement("button");
     btnRem.type = "button"; btnRem.className = "btn-remove-cor";
     btnRem.innerHTML = '<i class="fa-solid fa-xmark"></i>';
@@ -294,25 +267,31 @@
     container.appendChild(row);
   }
 
-  function _removerCorLinha(btn) {
-    var row = btn.closest ? btn.closest(".cor-row") : btn.parentElement;
-    if (row) row.remove();
+  function _adicionarLinha() {
+    if (document.querySelectorAll("#cores-container .cor-row").length >= _MAX_LINHAS) return;
+    _criarLinha("", "");
     _recontarLinhas();
   }
 
   function _recontarLinhas() {
-    var rows = document.querySelectorAll(".cor-row");
+    var rows = document.querySelectorAll("#cores-container .cor-row");
     rows.forEach(function(row, i) {
-      var num = row.querySelector(".cor-num");
-      if (num) num.textContent = i + 1;
-      var btn = row.querySelector(".btn-remove-cor");
-      if (btn) btn.style.display = rows.length > 1 ? "flex" : "none";
+      var n = row.querySelector(".cor-num");
+      if (n) n.textContent = i + 1;
+      var b = row.querySelector(".btn-remove-cor");
+      if (b) b.style.display = rows.length > 1 ? "flex" : "none";
     });
     var btnAdd = document.getElementById("btn-add-cor");
     var hint   = document.getElementById("cores-hint");
-    if (btnAdd) btnAdd.disabled = rows.length >= _MAX_CORES;
-    if (hint)   hint.style.display = rows.length >= _MAX_CORES ? "block" : "none";
+    if (btnAdd) btnAdd.disabled = rows.length >= _MAX_LINHAS;
+    if (hint)   hint.style.display = rows.length >= _MAX_LINHAS ? "block" : "none";
   }
+
+  /* Inicia com 1 linha vazia ao carregar a página */
+  document.addEventListener("DOMContentLoaded", function() {
+    _criarLinha("", "");
+    _recontarLinhas();
+  });
 </script>
 <script src="{{ url_for('static', filename='js/occurrences.js') }}"></script>
 {% endblock %}
