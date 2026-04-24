@@ -211,101 +211,116 @@
 
 {% block extra_js %}
 <script>
-  window.CATALOGO    = {{ catalogo | tojson }};
+  window.CATALOGO = {{ catalogo | tojson }};
+  var _MAX_LINHAS = 6;
 
-  const _MAX_CORES = 6;
-
-  // Popula todos os selects de cor com base no modelo selecionado
   function _popularCores() {
-    var modelo = document.getElementById("modelo").value;
-    var cores  = (window.CATALOGO[modelo] || []);
-    document.querySelectorAll(".cor-select").forEach(function(sel) {
-      var atual = sel.value;
-      sel.innerHTML = "";
-      var opt0 = document.createElement("option");
-      opt0.value = ""; opt0.textContent = "— Selecione a cor —";
-      sel.appendChild(opt0);
-      cores.forEach(function(c) {
-        var opt = document.createElement("option");
-        opt.value = c; opt.textContent = c;
-        if (c === atual) opt.selected = true;
-        sel.appendChild(opt);
+    var modelo  = document.getElementById("modelo").value;
+    var kitsObj = modelo ? (window.CATALOGO[modelo] || {}) : {};
+    var kitNomes = Object.keys(kitsObj);
+    document.querySelectorAll("#cores-container .kit-select").forEach(function(kitSel) {
+      var atual = kitSel.value;
+      kitSel.innerHTML = "";
+      kitSel.appendChild(new Option("— Selecione o Kit —", ""));
+      kitNomes.forEach(function(k) {
+        var opt = new Option(k, k);
+        if (k === atual) opt.selected = true;
+        kitSel.appendChild(opt);
       });
-      sel.disabled = (cores.length === 0);
+      kitSel.disabled = (kitNomes.length === 0);
+      var corSel = kitSel.parentElement.querySelector(".cor-select");
+      if (corSel) { corSel.innerHTML = ""; corSel.appendChild(new Option("— Combinação —", "")); corSel.disabled = true; }
     });
-    var btn = document.getElementById("btn-add-cor");
-    if (btn) btn.style.display = modelo ? "" : "none";
     _recontarLinhas();
   }
 
-  function _criarCorRow(valorSelecionado) {
-    var container = document.getElementById("cores-container");
-    var total = container.querySelectorAll(".cor-row").length;
+  function _popularCorDoKit(kitSel) {
     var modelo = document.getElementById("modelo").value;
-    var cores  = (window.CATALOGO[modelo] || []);
+    var kit    = kitSel.value;
+    var cores  = (modelo && kit) ? ((window.CATALOGO[modelo] || {})[kit] || []) : [];
+    var corSel = kitSel.parentElement.querySelector(".cor-select");
+    if (!corSel) return;
+    corSel.innerHTML = "";
+    corSel.appendChild(new Option("— Combinação de cores —", ""));
+    cores.forEach(function(c) { corSel.appendChild(new Option(c, c)); });
+    corSel.disabled = (cores.length === 0);
+  }
+
+  function _criarLinha(kitValor, corValor) {
+    var container = document.getElementById("cores-container");
+    var total     = container.querySelectorAll(".cor-row").length;
+    var modelo    = document.getElementById("modelo").value;
+    var kitsObj   = modelo ? (window.CATALOGO[modelo] || {}) : {};
+    var kitNomes  = Object.keys(kitsObj);
+    var cores     = (kitValor && kitsObj[kitValor]) ? kitsObj[kitValor] : [];
 
     var row = document.createElement("div");
     row.className = "cor-row";
 
     var num = document.createElement("span");
-    num.className = "cor-num";
-    num.textContent = total + 1;
+    num.className = "cor-num"; num.textContent = total + 1;
     row.appendChild(num);
 
-    var sel = document.createElement("select");
-    sel.name = "cor[]"; sel.className = "cor-select"; sel.required = true;
-    var opt0 = document.createElement("option");
-    opt0.value = ""; opt0.textContent = "— Selecione a cor —";
-    sel.appendChild(opt0);
-    cores.forEach(function(c) {
-      var opt = document.createElement("option");
-      opt.value = c; opt.textContent = c;
-      if (c === valorSelecionado) opt.selected = true;
-      sel.appendChild(opt);
+    var kitSel = document.createElement("select");
+    kitSel.name = "kit[]"; kitSel.className = "kit-select"; kitSel.required = true;
+    kitSel.appendChild(new Option("— Kit —", ""));
+    kitNomes.forEach(function(k) {
+      var opt = new Option(k, k);
+      if (k === kitValor) opt.selected = true;
+      kitSel.appendChild(opt);
     });
-    sel.disabled = (cores.length === 0);
-    row.appendChild(sel);
+    kitSel.disabled = (kitNomes.length === 0);
+    kitSel.onchange = function() { _popularCorDoKit(this); };
+    row.appendChild(kitSel);
+
+    var corSel = document.createElement("select");
+    corSel.name = "cor[]"; corSel.className = "cor-select"; corSel.required = true;
+    corSel.appendChild(new Option("— Combinação de cores —", ""));
+    cores.forEach(function(c) {
+      var opt = new Option(c, c);
+      if (c === corValor) opt.selected = true;
+      corSel.appendChild(opt);
+    });
+    corSel.disabled = (cores.length === 0);
+    row.appendChild(corSel);
 
     var btnRem = document.createElement("button");
     btnRem.type = "button"; btnRem.className = "btn-remove-cor";
     btnRem.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-    btnRem.onclick = function() { _removerCorLinha(btnRem); };
+    btnRem.onclick = function() { row.remove(); _recontarLinhas(); };
     row.appendChild(btnRem);
 
     container.appendChild(row);
   }
 
-  function _adicionarCorLinha() {
-    var container = document.getElementById("cores-container");
-    if (container.querySelectorAll(".cor-row").length >= _MAX_CORES) return;
-    _criarCorRow("");
-    _recontarLinhas();
-  }
-
-  function _removerCorLinha(btn) {
-    var row = btn.closest(".cor-row");
-    if (row) row.remove();
-    _recontarLinhas();
+  function _adicionarLinha() {
+    if (document.querySelectorAll("#cores-container .cor-row").length >= _MAX_LINHAS) return;
+    _criarLinha("", ""); _recontarLinhas();
   }
 
   function _recontarLinhas() {
-    var rows = document.querySelectorAll(".cor-row");
+    var rows = document.querySelectorAll("#cores-container .cor-row");
     rows.forEach(function(row, i) {
-      var num = row.querySelector(".cor-num");
-      if (num) num.textContent = i + 1;
-      var btn = row.querySelector(".btn-remove-cor");
-      if (btn) btn.style.display = rows.length > 1 ? "flex" : "none";
+      var n = row.querySelector(".cor-num"); if (n) n.textContent = i + 1;
+      var b = row.querySelector(".btn-remove-cor"); if (b) b.style.display = rows.length > 1 ? "flex" : "none";
     });
     var btnAdd = document.getElementById("btn-add-cor");
     var hint   = document.getElementById("cores-hint");
-    if (btnAdd) btnAdd.disabled = rows.length >= _MAX_CORES;
-    if (hint)   hint.style.display = rows.length >= _MAX_CORES ? "block" : "none";
+    if (btnAdd) btnAdd.disabled = rows.length >= _MAX_LINHAS;
+    if (hint)   hint.style.display = rows.length >= _MAX_LINHAS ? "block" : "none";
   }
 
-  // Pré-popula as cores existentes ao carregar a página
+  /* Pré-popula as linhas existentes. Formato: "Kit 2 - Amarelo/Azul" */
   document.addEventListener("DOMContentLoaded", function() {
-    var coresAtuais = {{ oc.cor | tojson }}.split(",").map(function(c){ return c.trim(); });
-    coresAtuais.forEach(function(cor) { _criarCorRow(cor); });
+    var corStr = {{ oc.cor | tojson }};
+    var itens  = corStr.split(",").map(function(s){ return s.trim(); }).filter(Boolean);
+    if (itens.length === 0) itens = [""];
+    itens.forEach(function(item) {
+      var sep = item.indexOf(" - ");
+      var kit = sep >= 0 ? item.slice(0, sep).trim() : "";
+      var cor = sep >= 0 ? item.slice(sep + 3).trim() : item;
+      _criarLinha(kit, cor);
+    });
     _recontarLinhas();
   });
 </script>
