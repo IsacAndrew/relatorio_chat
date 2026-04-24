@@ -130,9 +130,15 @@ def nova():
 
     # ── POST: processa formulário ──────────────────────────────
     modelo      = request.form.get("modelo", "").strip()
-    # cor[] pode ter múltiplos valores (até 6 cores por ocorrência)
-    cores_lista = [c.strip() for c in request.form.getlist("cor[]") if c.strip()]
-    cor         = ", ".join(cores_lista) if cores_lista else ""
+    # kit[] e cor[] vêm pareados — combina: "Kit 2 - Amarelo/Azul, Kit 1 - Preto"
+    kits_lista  = request.form.getlist("kit[]")
+    cores_lista = request.form.getlist("cor[]")
+    pares = []
+    for k, c in zip(kits_lista, cores_lista):
+        k = k.strip(); c = c.strip()
+        if k and c:
+            pares.append(f"{k} - {c}")
+    cor         = ", ".join(pares) if pares else ""
     tipo_erro   = request.form.get("tipo_erro", "").strip()
     data_str    = request.form.get("data_ocorrido", "").strip()
     hora_str    = request.form.get("hora_ocorrido", "").strip()
@@ -182,6 +188,7 @@ def nova():
     # ── Salva ocorrência ───────────────────────────────────────
     oc = Occurrence(
         modelo          = modelo,
+        kit             = kit,
         cor             = cor,
         tipo_erro       = tipo_erro,
         data_ocorrido   = data_ocorrido,
@@ -232,9 +239,15 @@ def editar(oc_id: int):
 
     # ── POST: salva alterações ─────────────────────────────────
     novo_modelo      = request.form.get("modelo", "").strip()
-    # cor[] pode ter múltiplos valores (até 6 cores por ocorrência)
-    cores_lista      = [c.strip() for c in request.form.getlist("cor[]") if c.strip()]
-    nova_cor         = ", ".join(cores_lista) if cores_lista else ""
+    # kit[] e cor[] vêm pareados — combina: "Kit 2 - Amarelo/Azul, Kit 1 - Preto"
+    kits_lista  = request.form.getlist("kit[]")
+    cores_lista = request.form.getlist("cor[]")
+    pares = []
+    for k, c in zip(kits_lista, cores_lista):
+        k = k.strip(); c = c.strip()
+        if k and c:
+            pares.append(f"{k} - {c}")
+    nova_cor         = ", ".join(pares) if pares else ""
     novo_tipo_erro   = request.form.get("tipo_erro", "").strip()
     data_str         = request.form.get("data_ocorrido", "").strip()
     hora_str         = request.form.get("hora_ocorrido", "").strip()
@@ -256,6 +269,7 @@ def editar(oc_id: int):
             mudancas[campo] = {"antes": str(velho or ""), "depois": str(novo or "")}
 
     _registra_mudanca("modelo",        oc.modelo,        novo_modelo)
+    _registra_mudanca("kit",           oc.kit,           novo_kit)
     _registra_mudanca("cor",           oc.cor,           nova_cor)
     _registra_mudanca("tipo_erro",     oc.tipo_erro,     novo_tipo_erro)
     _registra_mudanca("data_ocorrido", oc.data_ocorrido, nova_data)
