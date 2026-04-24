@@ -201,7 +201,6 @@ def nova():
     # ── Salva ocorrência ───────────────────────────────────────
     oc = Occurrence(
         modelo          = modelo,
-        kit             = kit,
         cor             = cor,
         tipo_erro       = tipo_erro,
         data_ocorrido   = data_ocorrido,
@@ -288,7 +287,6 @@ def editar(oc_id: int):
             mudancas[campo] = {"antes": str(velho or ""), "depois": str(novo or "")}
 
     _registra_mudanca("modelo",        oc.modelo,        novo_modelo)
-    _registra_mudanca("kit",           oc.kit,           novo_kit)
     _registra_mudanca("cor",           oc.cor,           nova_cor)
     _registra_mudanca("tipo_erro",     oc.tipo_erro,     novo_tipo_erro)
     _registra_mudanca("data_ocorrido", oc.data_ocorrido, nova_data)
