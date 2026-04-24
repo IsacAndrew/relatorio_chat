@@ -130,25 +130,38 @@ def nova():
 
     # ── POST: processa formulário ──────────────────────────────
     modelo      = request.form.get("modelo", "").strip()
-    # kit[] e cor[] vêm pareados — combina: "Kit 2 - Amarelo/Azul, Kit 1 - Preto"
-    kits_lista  = request.form.getlist("kit[]")
-    cores_lista = request.form.getlist("cor[]")
-    pares = []
-    for k, c in zip(kits_lista, cores_lista):
-        k = k.strip(); c = c.strip()
-        if k and c:
-            pares.append(f"{k} - {c}")
-    cor         = ", ".join(pares) if pares else ""
     tipo_erro   = request.form.get("tipo_erro", "").strip()
     data_str    = request.form.get("data_ocorrido", "").strip()
     hora_str    = request.form.get("hora_ocorrido", "").strip()
     nome_cliente  = request.form.get("nome_cliente", "").strip() or None
     link_conversa = request.form.get("link_conversa", "").strip() or None
 
+    # kit[] e cor[] podem ter tamanhos diferentes (selects desabilitados não são enviados).
+    # Usamos iteração independente: um par válido exige kit E cor não-vazios.
+    kits_lista  = request.form.getlist("kit[]")
+    cores_lista = request.form.getlist("cor[]")
+    pares = []
+
+    # Caso as listas tenham o mesmo tamanho → zip normal
+    if len(kits_lista) == len(cores_lista):
+        for k, c in zip(kits_lista, cores_lista):
+            k = k.strip(); c = c.strip()
+            if k and c:
+                pares.append(f"{k} - {c}")
+    else:
+        # Listas com tamanhos diferentes: usa apenas os itens não-vazios de cada lista
+        # emparelhando pela posição dos itens preenchidos
+        kits_validos  = [k.strip() for k in kits_lista  if k.strip()]
+        cores_validas = [c.strip() for c in cores_lista if c.strip()]
+        for k, c in zip(kits_validos, cores_validas):
+            pares.append(f"{k} - {c}")
+
+    cor = ", ".join(pares) if pares else ""
+
     # Validação básica dos campos obrigatórios
     erros = []
     if not modelo:    erros.append("Modelo é obrigatório.")
-    if not cor:       erros.append("Selecione ao menos uma cor.")
+    if not cor:       erros.append("Selecione o kit e a combinação de cores.")
     if not tipo_erro: erros.append("Tipo de erro é obrigatório.")
     if not data_str:  erros.append("Data do ocorrido é obrigatória.")
     if not hora_str:  erros.append("Hora do ocorrido é obrigatória.")
@@ -239,20 +252,26 @@ def editar(oc_id: int):
 
     # ── POST: salva alterações ─────────────────────────────────
     novo_modelo      = request.form.get("modelo", "").strip()
-    # kit[] e cor[] vêm pareados — combina: "Kit 2 - Amarelo/Azul, Kit 1 - Preto"
-    kits_lista  = request.form.getlist("kit[]")
-    cores_lista = request.form.getlist("cor[]")
-    pares = []
-    for k, c in zip(kits_lista, cores_lista):
-        k = k.strip(); c = c.strip()
-        if k and c:
-            pares.append(f"{k} - {c}")
-    nova_cor         = ", ".join(pares) if pares else ""
     novo_tipo_erro   = request.form.get("tipo_erro", "").strip()
     data_str         = request.form.get("data_ocorrido", "").strip()
     hora_str         = request.form.get("hora_ocorrido", "").strip()
     novo_nome        = request.form.get("nome_cliente", "").strip() or None
     novo_link        = request.form.get("link_conversa", "").strip() or None
+
+    kits_lista  = request.form.getlist("kit[]")
+    cores_lista = request.form.getlist("cor[]")
+    pares = []
+    if len(kits_lista) == len(cores_lista):
+        for k, c in zip(kits_lista, cores_lista):
+            k = k.strip(); c = c.strip()
+            if k and c:
+                pares.append(f"{k} - {c}")
+    else:
+        kits_validos  = [k.strip() for k in kits_lista  if k.strip()]
+        cores_validas = [c.strip() for c in cores_lista if c.strip()]
+        for k, c in zip(kits_validos, cores_validas):
+            pares.append(f"{k} - {c}")
+    nova_cor = ", ".join(pares) if pares else ""
 
     try:
         nova_data = datetime.strptime(data_str, "%Y-%m-%d").date()
