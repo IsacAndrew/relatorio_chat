@@ -59,6 +59,7 @@ class Occurrence(db.Model):
 
     # ── Campos obrigatórios ───────────────────────────────────
     modelo          = db.Column(db.String(120), nullable=False)
+    kit             = db.Column(db.String(20),  nullable=True)   # ex: "Kit 2"
     cor             = db.Column(db.String(80),  nullable=False)
     tipo_erro       = db.Column(db.String(80),  nullable=False)
     data_ocorrido   = db.Column(db.Date,        nullable=False)
@@ -67,8 +68,9 @@ class Occurrence(db.Model):
     # ── Campos opcionais ──────────────────────────────────────
     nome_cliente    = db.Column(db.String(200), nullable=True)
     link_conversa   = db.Column(db.Text,        nullable=True)
-    print_url       = db.Column(db.Text,        nullable=True)   # URL pública Cloudinary
-    print_public_id = db.Column(db.String(256), nullable=True)   # ID interno Cloudinary
+    print_url       = db.Column(db.Text,        nullable=True)
+    print_public_id = db.Column(db.String(256), nullable=True)
+    plataforma      = db.Column(db.String(50),  nullable=True)  # TikTok Shop | Shopee | Shein
 
     # ── Metadados ─────────────────────────────────────────────
     criado_por_id   = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
@@ -90,6 +92,7 @@ class Occurrence(db.Model):
         return {
             "id":             self.id,
             "modelo":         self.modelo,
+            "kit":            self.kit or "",
             "cor":            self.cor,
             "tipo_erro":      self.tipo_erro,
             "data_ocorrido":  self.data_ocorrido.strftime("%d/%m/%Y"),
@@ -97,6 +100,7 @@ class Occurrence(db.Model):
             "nome_cliente":   self.nome_cliente or "",
             "link_conversa":  self.link_conversa or "",
             "print_url":      self.print_url or "",
+            "plataforma":     self.plataforma or "",
             "criado_por":     self.criador.username if self.criador else "",
             "criado_em":      self.criado_em.strftime("%d/%m/%Y %H:%M"),
             "atualizado_em":  self.atualizado_em.strftime("%d/%m/%Y %H:%M"),
