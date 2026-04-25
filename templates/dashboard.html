@@ -54,15 +54,15 @@
 <!-- ── Gráficos ──────────────────────────────────────────── -->
 <div class="charts-grid">
 
-  <!-- Pizza: tipos de erro -->
+  <!-- Pizza: tipos de erro — legenda esquerda, gráfico direita -->
   <div class="card chart-card chart-pizza">
-    <h3 class="chart-title">
+    <h3 class="chart-title" style="grid-column: 1 / -1;">
       <i class="fa-solid fa-chart-pie"></i> Tipos de Erro
     </h3>
+    <div id="legend-tipos-erro" class="chart-legend"></div>
     <div class="chart-wrapper">
       <canvas id="chart-tipos-erro"></canvas>
     </div>
-    <div id="legend-tipos-erro" class="chart-legend"></div>
   </div>
 
   <!-- Barras: modelos -->
