@@ -58,8 +58,27 @@ def create_app() -> Flask:
     with app.app_context():
         db.create_all()
         _seed_users_if_empty()
+        _migrar_colunas()  # adiciona colunas novas sem perder dados
 
     return app
+
+
+def _migrar_colunas():
+    """
+    Adiciona colunas novas na tabela existente sem perder dados.
+    Seguro para rodar múltiplas vezes — ignora erros se a coluna já existir.
+    """
+    from sqlalchemy import text
+    novas_colunas = [
+        "ALTER TABLE occurrences ADD COLUMN plataforma VARCHAR(50)",
+    ]
+    with db.engine.connect() as conn:
+        for sql in novas_colunas:
+            try:
+                conn.execute(text(sql))
+                conn.commit()
+            except Exception:
+                pass  # coluna já existe — seguro ignorar
 
 
 def _seed_users_if_empty():
