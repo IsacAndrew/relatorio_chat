@@ -135,6 +135,7 @@ def nova():
     hora_str    = request.form.get("hora_ocorrido", "").strip()
     nome_cliente  = request.form.get("nome_cliente", "").strip() or None
     link_conversa = request.form.get("link_conversa", "").strip() or None
+    plataforma    = request.form.get("plataforma", "").strip() or None
 
     # kit[] e cor[] podem ter tamanhos diferentes (selects desabilitados não são enviados).
     # Usamos iteração independente: um par válido exige kit E cor não-vazios.
@@ -149,8 +150,6 @@ def nova():
             if k and c:
                 pares.append(f"{k} - {c}")
     else:
-        # Listas com tamanhos diferentes: usa apenas os itens não-vazios de cada lista
-        # emparelhando pela posição dos itens preenchidos
         kits_validos  = [k.strip() for k in kits_lista  if k.strip()]
         cores_validas = [c.strip() for c in cores_lista if c.strip()]
         for k, c in zip(kits_validos, cores_validas):
@@ -160,11 +159,12 @@ def nova():
 
     # Validação básica dos campos obrigatórios
     erros = []
-    if not modelo:    erros.append("Modelo é obrigatório.")
-    if not cor:       erros.append("Selecione o kit e a combinação de cores.")
-    if not tipo_erro: erros.append("Tipo de erro é obrigatório.")
-    if not data_str:  erros.append("Data do ocorrido é obrigatória.")
-    if not hora_str:  erros.append("Hora do ocorrido é obrigatória.")
+    if not modelo:     erros.append("Modelo é obrigatório.")
+    if not cor:        erros.append("Selecione o kit e a combinação de cores.")
+    if not tipo_erro:  erros.append("Tipo de erro é obrigatório.")
+    if not plataforma: erros.append("Plataforma é obrigatória.")
+    if not data_str:   erros.append("Data do ocorrido é obrigatória.")
+    if not hora_str:   erros.append("Hora do ocorrido é obrigatória.")
 
     if erros:
         for e in erros:
@@ -203,6 +203,7 @@ def nova():
         modelo          = modelo,
         cor             = cor,
         tipo_erro       = tipo_erro,
+        plataforma      = plataforma,
         data_ocorrido   = data_ocorrido,
         hora_ocorrido   = hora_ocorrido,
         nome_cliente    = nome_cliente,
@@ -256,6 +257,7 @@ def editar(oc_id: int):
     hora_str         = request.form.get("hora_ocorrido", "").strip()
     novo_nome        = request.form.get("nome_cliente", "").strip() or None
     novo_link        = request.form.get("link_conversa", "").strip() or None
+    nova_plataforma  = request.form.get("plataforma", "").strip() or None
 
     kits_lista  = request.form.getlist("kit[]")
     cores_lista = request.form.getlist("cor[]")
@@ -289,6 +291,7 @@ def editar(oc_id: int):
     _registra_mudanca("modelo",        oc.modelo,        novo_modelo)
     _registra_mudanca("cor",           oc.cor,           nova_cor)
     _registra_mudanca("tipo_erro",     oc.tipo_erro,     novo_tipo_erro)
+    _registra_mudanca("plataforma",    oc.plataforma,    nova_plataforma)
     _registra_mudanca("data_ocorrido", oc.data_ocorrido, nova_data)
     _registra_mudanca("hora_ocorrido", oc.hora_ocorrido, nova_hora)
     _registra_mudanca("nome_cliente",  oc.nome_cliente,  novo_nome)
@@ -321,6 +324,7 @@ def editar(oc_id: int):
     oc.modelo        = novo_modelo
     oc.cor           = nova_cor
     oc.tipo_erro     = novo_tipo_erro
+    oc.plataforma    = nova_plataforma
     oc.data_ocorrido = nova_data
     oc.hora_ocorrido = nova_hora
     oc.nome_cliente  = novo_nome
