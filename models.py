@@ -59,7 +59,7 @@ class Occurrence(db.Model):
 
     # ── Campos obrigatórios ───────────────────────────────────
     modelo          = db.Column(db.String(120), nullable=False)
-    kit             = db.Column(db.String(20),  nullable=True)   # ex: "Kit 2"
+    #kit             = db.Column(db.String(20),  nullable=True)   # ex: "Kit 2"
     cor             = db.Column(db.String(80),  nullable=False)
     tipo_erro       = db.Column(db.String(80),  nullable=False)
     data_ocorrido   = db.Column(db.Date,        nullable=False)
@@ -92,7 +92,7 @@ class Occurrence(db.Model):
         return {
             "id":             self.id,
             "modelo":         self.modelo,
-            "kit":            self.kit or "",
+            #"kit":            self.kit or "",
             "cor":            self.cor,
             "tipo_erro":      self.tipo_erro,
             "data_ocorrido":  self.data_ocorrido.strftime("%d/%m/%Y"),
