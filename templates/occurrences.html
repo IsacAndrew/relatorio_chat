@@ -68,6 +68,7 @@
           <th>Modelo</th>
           <th>Cor</th>
           <th>Tipo de Erro</th>
+          <th>Plataforma</th>
           <th>Data / Hora</th>
           <th>Cliente</th>
           <th>Print</th>
@@ -101,6 +102,13 @@
               {{ oc.tipo_erro }}
             </span>
           </td>
+          <td>
+            {% if oc.plataforma %}
+            <span class="badge-plataforma badge-plat-{{ oc.plataforma | lower | replace(' ', '-') }}">
+              {{ oc.plataforma }}
+            </span>
+            {% else %}—{% endif %}
+          </td>
           <td class="td-data">
             {{ oc.data_ocorrido.strftime('%d/%m/%Y') }}<br/>
             <small>{{ oc.hora_ocorrido.strftime('%H:%M') }}</small>
@@ -133,7 +141,7 @@
         </tr>
         {% else %}
         <tr id="tr-empty">
-          <td colspan="9" class="td-empty">
+          <td colspan="10" class="td-empty">
             <div class="empty-state-inline">
               <i class="fa-solid fa-inbox"></i>
               <span>Nenhuma ocorrência registrada ainda.</span>
