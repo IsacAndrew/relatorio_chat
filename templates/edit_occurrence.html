@@ -69,6 +69,17 @@
           </select>
         </div>
 
+        <!-- PLATAFORMA -->
+        <div class="form-group">
+          <label for="plataforma">Plataforma <span class="required">*</span></label>
+          <select id="plataforma" name="plataforma" required>
+            <option value="">— Selecione a plataforma —</option>
+            <option value="TikTok Shop" {% if oc.plataforma == 'TikTok Shop' %}selected{% endif %}>TikTok Shop</option>
+            <option value="Shopee"      {% if oc.plataforma == 'Shopee'      %}selected{% endif %}>Shopee</option>
+            <option value="Shein"       {% if oc.plataforma == 'Shein'       %}selected{% endif %}>Shein</option>
+          </select>
+        </div>
+
       </div>
     </div>
 
